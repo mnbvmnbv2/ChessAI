@@ -1,85 +1,95 @@
-let board2 = `
-8	♜	♞	♝	♛	♚	♝	♞	♜
-7	♟	♟	♟	♟	♟	♟	♟	♟
-6	
-5	
-4	
-3	
-2	♙	♙	♙	♙	♙	♙	♙	♙
-1	♖	♘	♗	♕	♔	♗	♘	♖
-    a	b	c	d	e	f	g	h
-`;
-
-class Piece {
-	constructor(color){
-		this.color = color;
-	}
-	move(){
-
-	}
-}
-class Pawn extends Piece {
-	constructor(color){
-		super(color)
-		if(this.color == 'w'){
-			this.char = '♙';
-		} else {
-			this.char = '♟';
-		}
-	}
-	move(){
-		if(this.color = 'w'){
-			return [(1,0)];
-		} else {
-			return [(-1,0)];
-		}
-	}
-	take(){
-		if(this.color = 'w'){
-			return [(1,1),(1,-1)];
-		} else {
-			return [(-1,1),(-1,-1)];
-		}
-	}
-}
-
+const whitePieces = [ '♙', '♖', '♘', '♗', '♕', '♔' ];
+const blackPieces = [ '♟', '♜', '♞', '♝', '♛', '♚' ];
 class Game {
 	constructor() {
-		this.board = {
-			r : [1,2,3,4,5,6,7,8],
-			a : [0,new Pawn('w'),0,0,0,0,0,0],
-			b : [0,new Pawn('w'),0,0,0,0,0,0],
-			c : [0,new Pawn('w'),0,0,0,0,0,0],
-			d : [0,0,0,0,0,0,0,0],
-			e : [0,0,0,0,0,0,0,0],
-			f : [0,0,0,0,0,0,0,0],
-			g : [0,0,0,0,0,0,0,0],
-			h : [0,0,0,0,0,0,0,0]
-		}
+		this.board = [
+			[ '♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜' ],
+			[ '♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟' ],
+			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
+			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
+			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
+			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
+			[ '♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙' ],
+			[ '♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖' ]
+		];
+		this.turn = 0;
+		this.player = 'white';
+		this.possibleMoves = [];
 	}
 	print() {
 		let b = '';
-		for(let column in this.board){
-			console.log(column)
-			let col = column;
-			this.board[column].forEach(e => {
-				if(typeof e == 'object'){
-					col += '	'+e.char;
-				} else {
-					col += '	'+e;
+		this.board.forEach((r, i) => {
+			let row = i + 1;
+			this.board[i].forEach((e) => {
+				row += '	' + e;
+			});
+			row += '\n';
+			b += row;
+		});
+		console.log('0	a	b	c	d	e	f	g	h');
+		console.log(b);
+	}
+	calculateMoves() {
+		this.possibleMoves = [];
+		//white
+		if ((this.player = 'white')) {
+			//PAWNS
+			//start
+			this.board[6].forEach((e, col) => {
+				if (e == '♙' && this.board[5][col] == '0' && this.board[4][col] == '0') {
+					this.possibleMoves.push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
 				}
 			});
-			col += '\n';
-			b += col;
-		} 
-		console.log(b);
+			//1 forward and capture
+			this.board.forEach((row, i) => {
+				row.forEach((p, col) => {
+					//1 forward
+					try {
+						if (p == '♙' && this.board[i - 1][col] == '0') {
+							this.possibleMoves.push(numToCol(col) + (8 - i) + '|' + numToCol(col) + (9 - i));
+						}
+					} catch (e) {}
+					//capture left
+					try {
+						if (p == '♙' && blackPieces.some((v) => this.board[i - 1][col - 1].includes(v))) {
+							this.possibleMoves.push(numToCol(col) + (8 - i) + '|' + numToCol(col - 1) + (9 - i));
+						}
+					} catch (e) {}
+					//capture right
+					try {
+						if (p == '♙' && blackPieces.some((v) => this.board[i - 1][col + 1].includes(v))) {
+							this.possibleMoves.push(numToCol(col) + (8 - i) + '|' + numToCol(col + 1) + (9 - i));
+						}
+					} catch (e) {}
+
+					//ROOK
+					let rookMoving = 0;
+					let rookBlocking = false;
+					while (rookMoving < 7 && !rookBlocking) {
+						try {
+							if (p == '♖' && blackPieces.some((v) => this.board[i - 1][col + 1].includes(v))) {
+								this.possibleMoves.push(numToCol(col) + (8 - i) + '|' + numToCol(col + 1) + (9 - i));
+							}
+						} catch (e) {}
+					}
+				});
+			});
+
+			//ROOK
+		}
 	}
 }
 
+function checkForCheck() {}
 
+function numToCol(n) {
+	return String.fromCharCode(n + 97);
+}
 
-const g = new Game;
-console.log(g.print())	
+const g = new Game();
+console.log(g.print());
+g.calculateMoves();
+console.log(g.possibleMoves);
 
 //check move
 //out of board
