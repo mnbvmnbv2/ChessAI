@@ -1,12 +1,14 @@
-const whitePieces = [ '♙', '♖', '♘', '♗', '♕', '♔' ];
-const blackPieces = [ '♟', '♜', '♞', '♝', '♛', '♚' ];
+const whitePieces = [ '♙', '♖', '♘', '♗', '♕' ];
+const blackPieces = [ '♟', '♜', '♞', '♝', '♛' ];
+const whiteKing = '♔';
+const blackKing = '♚';
 class Game {
 	constructor() {
 		this.board = [
 			[ '♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜' ],
 			[ '♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟' ],
 			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, '♖', 0, 0, 0, 0 ],
+			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
 			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
 			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
 			[ '♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙' ],
@@ -14,7 +16,9 @@ class Game {
 		];
 		this.turn = 0;
 		this.player = 'white';
-		this.possibleMoves = [];
+		this.incheck = false;
+		this.white = [];
+		this.black = [];
 	}
 	printBoard() {
 		let b = '';
@@ -29,223 +33,387 @@ class Game {
 		console.log('	a	b	c	d	e	f	g	h');
 		console.log(b);
 	}
-	calculateMoves() {
-		this.possibleMoves = [];
-		//white
-		if ((this.player = 'white')) {
-			//PAWNS
-			//start
+	doMove(desc) {
+		let from = desc.slice(0, 2);
+		console.log(from);
+		let to = desc.slice(3);
+		console.log(to);
+		let nextBoard = new Game();
+		nextBoard.board = this.board;
+		nextBoard.board[8 - to[1]][colToNum(to[0])] = nextBoard.board[8 - from[1]][colToNum(from[0])];
+		nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
+		this.board = nextBoard.board;
+		this.printBoard();
+		this.turn++;
+		if (this.player == 'white') {
+			this.player = 'black';
+		} else {
+			this.player = 'white';
+		}
+	}
+	calculateMoves(color) {
+		this[color] = [];
+		if (turn % 2 == 0) {
+			//start pawn
 			this.board[6].forEach((e, col) => {
 				if (e == '♙' && this.board[5][col] == '0' && this.board[4][col] == '0') {
-					this.possibleMoves.push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
+					if (!this.isWhiteCheck()) {
+						this[color].push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
+					}
 				}
 			});
-			//check every square
-			this.board.forEach((arr, row) => {
-				arr.forEach((p, col) => {
-					//1 forward
-					if (p == '♙') {
-						try {
-							if (this.board[row - 1][col] == 0) {
-								this.possibleMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row));
-							}
-						} catch (e) {}
-						//capture left king
-						try {
-							if (this.board[row - 1][col] == '♚') {
-								this.possibleMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 + 1 - row));
-							}
-						} catch (e) {}
-						//capture right king
-						try {
-							if (this.board[row - 1][col] == '♚') {
-								this.possibleMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 + 1 - row));
-							}
-						} catch (e) {}
-						//capture left (1 is en passant)
-						try {
-							if (
-								blackPieces.some((v) => this.board[row - 1][col - 1].includes(v)) ||
-								this.board[row - 1][col - 1] == 1
-							) {
-								this.possibleMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row));
-							}
-						} catch (e) {}
-						//capture right (1 is en passant)
-						try {
-							if (
-								blackPieces.some((v) => this.board[row - 1][col + 1].includes(v)) ||
-								this.board[row - 1][col - 1] == 1
-							) {
-								his.possibleMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row));
-							}
-						} catch (e) {}
+		} else {
+			this.board[6].forEach((e, col) => {
+				if (e == '♙' && this.board[5][col] == '0' && this.board[4][col] == '0') {
+					if (!this.isWhiteCheck()) {
+						this[color].push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
 					}
-
-					//ROOK and QUEEN straight
-					if (p == '♖' || p == '♕') {
-						let rookMoving = 1;
-						let rookBlocking = false;
-						//oppover
-						while (rookMoving < 8 && !rookBlocking) {
-							try {
-								//hvis fri rute
-								if (this.board[row - rookMoving][col] == 0) {
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + rookMoving - row)
-									);
-								} else if (this.board[row - rookMoving][col] == '♚') {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 + rookMoving - row)
-									);
-									rookBlocking = true;
-								} else if (blackPieces.some((v) => this.board[row - rookMoving][col].includes(v))) {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 + rookMoving - row)
-									);
-									rookBlocking = true;
-								} else {
-									//samme farge brikke
-									rookBlocking = true;
-								}
-							} catch (e) {}
-							rookMoving++;
-						}
-						//hoyre
-						rookMoving = 1;
-						rookBlocking = false;
-						while (rookMoving < 8 && !rookBlocking) {
-							try {
-								//hvis fri rute
-								if (this.board[row][col + rookMoving] == 0) {
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + '|' + numToCol(col + rookMoving) + (8 - row)
-									);
-								} else if (this.board[row][col + rookMoving] == '♚') {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'k' + numToCol(col + rookMoving) + (8 - row)
-									);
-									rookBlocking = true;
-								} else if (blackPieces.some((v) => this.board[row][col + rookMoving].includes(v))) {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'x' + numToCol(col + rookMoving) + (8 - row)
-									);
-									rookBlocking = true;
-								} else {
-									//samme farge brikke
-									rookBlocking = true;
-								}
-							} catch (e) {}
-							rookMoving++;
-						}
-						//venstre
-						rookMoving = 1;
-						rookBlocking = false;
-						while (rookMoving < 8 && !rookBlocking) {
-							try {
-								//hvis fri rute
-								if (this.board[row][col - rookMoving] == 0) {
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + '|' + numToCol(col - rookMoving) + (8 - row)
-									);
-								} else if (this.board[row][col - rookMoving] == '♚') {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'k' + numToCol(col - rookMoving) + (8 - row)
-									);
-									rookBlocking = true;
-								} else if (blackPieces.some((v) => this.board[row][col - rookMoving].includes(v))) {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'x' + numToCol(col - rookMoving) + (8 - row)
-									);
-									rookBlocking = true;
-								} else {
-									//samme farge brikke
-									rookBlocking = true;
-								}
-							} catch (e) {}
-							rookMoving++;
-						}
-						//nedover
-						rookMoving = 1;
-						rookBlocking = false;
-						while (rookMoving < 8 && !rookBlocking) {
-							try {
-								//hvis fri rute
-								if (this.board[row + rookMoving][col] == 0) {
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - rookMoving - row)
-									);
-								} else if (this.board[row + rookMoving][col] == '♚') {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 - rookMoving - row)
-									);
-									rookBlocking = true;
-								} else if (blackPieces.some((v) => this.board[row + rookMoving][col].includes(v))) {
-									//hvis motsatt brikke
-									this.possibleMoves.push(
-										numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 - rookMoving - row)
-									);
-									rookBlocking = true;
-								} else {
-									//samme farge brikke
-									rookBlocking = true;
-								}
-							} catch (e) {}
-							rookMoving++;
-						}
-					}
-
-					//KNIGHT
-					if (p == '♘') {
-						const knightAround1 = [ -2, -1, 1, 2, -2, -1, 1, 2 ];
-						const knightAround2 = [ 1, 2, -2, -1, -1, -2, 2, 1 ];
-						for (let j = 0; j < 8; j++) {
-							try {
-								if (
-									this.board[row + knightAround1[j]][col + knightAround2[j]] == 0 ||
-									this.board[row + knightAround1[j]][col + knightAround2[j]] == 1
-								) {
-									this.possibleMoves.push(
-										numToCol(col) +
-											(8 - row) +
-											'|' +
-											numToCol(col + knightAround2[j]) +
-											(8 - knightAround1[j] - row)
-									);
-								} else if (this.board[row + knightAround1[j]][col + knightAround2[j]] == '♚') {
-									this.possibleMoves.push(
-										numToCol(col) +
-											(8 - row) +
-											'k' +
-											numToCol(col + knightAround2[j]) +
-											(8 - knightAround1[j] - row)
-									);
-								} else if (
-									blackPieces.some((v) =>
-										this.board[row + knightAround1[j]][col + knightAround2[j]].includes(v)
-									)
-								) {
-									this.possibleMoves.push(
-										numToCol(col) +
-											(8 - row) +
-											'x' +
-											numToCol(col + knightAround2[j]) +
-											(8 - knightAround1[j] - row)
-									);
-								}
-							} catch (e) {}
-						}
-					}
-				});
+				}
 			});
 		}
+		//check every square
+		this.board.forEach((arr, row) => {
+			arr.forEach((p, col) => {
+				//PAWN
+				if (p == '♙') {
+					try {
+						if (this.board[row - 1][col] == 0) {
+							this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row));
+						}
+					} catch (e) {}
+					//capture left king
+					try {
+						if (this.board[row - 1][col - 1] == '♚') {
+							this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 + 1 - row));
+						}
+					} catch (e) {}
+					//capture right king
+					try {
+						if (this.board[row - 1][col + 1] == '♚') {
+							this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 + 1 - row));
+						}
+					} catch (e) {}
+					//capture left (1 is en passant)
+					try {
+						if (
+							blackPieces.some((v) => this.board[row - 1][col - 1].includes(v)) ||
+							this.board[row - 1][col - 1] == 1
+						) {
+							this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row));
+						}
+					} catch (e) {}
+					//capture right (1 is en passant)
+					try {
+						if (
+							blackPieces.some((v) => this.board[row - 1][col + 1].includes(v)) ||
+							this.board[row - 1][col - 1] == 1
+						) {
+							his[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row));
+						}
+					} catch (e) {}
+				}
+
+				//ROOK and QUEEN straight
+				if (p == '♖' || p == '♕') {
+					let rookMoving = 1;
+					let rookBlocking = false;
+					//oppover
+					while (rookMoving < 8 && !rookBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row - rookMoving][col] == 0) {
+								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + rookMoving - row));
+							} else if (this.board[row - rookMoving][col] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 + rookMoving - row));
+								rookBlocking = true;
+							} else if (blackPieces.some((v) => this.board[row - rookMoving][col].includes(v))) {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 + rookMoving - row));
+								rookBlocking = true;
+							} else {
+								//samme farge brikke
+								rookBlocking = true;
+							}
+						} catch (e) {}
+						rookMoving++;
+					}
+					//hoyre
+					rookMoving = 1;
+					rookBlocking = false;
+					while (rookMoving < 8 && !rookBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row][col + rookMoving] == 0) {
+								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col + rookMoving) + (8 - row));
+							} else if (this.board[row][col + rookMoving] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col + rookMoving) + (8 - row));
+								rookBlocking = true;
+							} else if (blackPieces.some((v) => this.board[row][col + rookMoving].includes(v))) {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col + rookMoving) + (8 - row));
+								rookBlocking = true;
+							} else {
+								//samme farge brikke
+								rookBlocking = true;
+							}
+						} catch (e) {}
+						rookMoving++;
+					}
+					//venstre
+					rookMoving = 1;
+					rookBlocking = false;
+					while (rookMoving < 8 && !rookBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row][col - rookMoving] == 0) {
+								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col - rookMoving) + (8 - row));
+							} else if (this.board[row][col - rookMoving] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col - rookMoving) + (8 - row));
+								rookBlocking = true;
+							} else if (blackPieces.some((v) => this.board[row][col - rookMoving].includes(v))) {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col - rookMoving) + (8 - row));
+								rookBlocking = true;
+							} else {
+								//samme farge brikke
+								rookBlocking = true;
+							}
+						} catch (e) {}
+						rookMoving++;
+					}
+					//nedover
+					rookMoving = 1;
+					rookBlocking = false;
+					while (rookMoving < 8 && !rookBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row + rookMoving][col] == 0) {
+								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - rookMoving - row));
+							} else if (this.board[row + rookMoving][col] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 - rookMoving - row));
+								rookBlocking = true;
+							} else if (blackPieces.some((v) => this.board[row + rookMoving][col].includes(v))) {
+								//hvis motsatt brikke
+								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 - rookMoving - row));
+								rookBlocking = true;
+							} else {
+								//samme farge brikke
+								rookBlocking = true;
+							}
+						} catch (e) {}
+						rookMoving++;
+					}
+				}
+
+				//KNIGHT
+				if (p == '♘') {
+					const knightAround1 = [ -2, -1, 1, 2, -2, -1, 1, 2 ];
+					const knightAround2 = [ 1, 2, -2, -1, -1, -2, 2, 1 ];
+					for (let j = 0; j < 8; j++) {
+						try {
+							if (
+								this.board[row + knightAround1[j]][col + knightAround2[j]] == 0 ||
+								this.board[row + knightAround1[j]][col + knightAround2[j]] == 1
+							) {
+								this[color].push(
+									numToCol(col) +
+										(8 - row) +
+										'|' +
+										numToCol(col + knightAround2[j]) +
+										(8 - knightAround1[j] - row)
+								);
+							} else if (this.board[row + knightAround1[j]][col + knightAround2[j]] == '♚') {
+								this[color].push(
+									numToCol(col) +
+										(8 - row) +
+										'k' +
+										numToCol(col + knightAround2[j]) +
+										(8 - knightAround1[j] - row)
+								);
+							} else if (
+								blackPieces.some((v) =>
+									this.board[row + knightAround1[j]][col + knightAround2[j]].includes(v)
+								)
+							) {
+								this[color].push(
+									numToCol(col) +
+										(8 - row) +
+										'x' +
+										numToCol(col + knightAround2[j]) +
+										(8 - knightAround1[j] - row)
+								);
+							}
+						} catch (e) {}
+					}
+				}
+				//BISHOP
+				if (p == '♗' || p == '♕') {
+					let bishopMoving = 1;
+					let bishopBlocking = false;
+					//up right
+					while (bishopMoving < 8 && !bishopBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row - bishopMoving][col + bishopMoving] == 0) {
+								this[color].push(
+									numToCol(col) + (8 - row) + '|' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
+								);
+							} else if (this.board[row - bishopMoving][col + bishopMoving] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'k' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else if (
+								blackPieces.some((v) => this.board[row - bishopMoving][col + bishopMoving].includes(v))
+							) {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'x' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else {
+								//samme farge brikke
+								bishopBlocking = true;
+							}
+						} catch (e) {}
+						bishopMoving++;
+					}
+					//up left
+					bishopMoving = 1;
+					bishopBlocking = false;
+					while (bishopMoving < 8 && !bishopBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row - bishopMoving][col - bishopMoving] == 0) {
+								this[color].push(
+									numToCol(col) + (8 - row) + '|' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
+								);
+							} else if (this.board[row - bishopMoving][col - bishopMoving] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'k' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else if (
+								blackPieces.some((v) => this.board[row - bishopMoving][col - bishopMoving].includes(v))
+							) {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'x' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else {
+								//samme farge brikke
+								bishopBlocking = true;
+							}
+						} catch (e) {}
+						bishopMoving++;
+					}
+					//down left
+					bishopMoving = 1;
+					bishopBlocking = false;
+					while (bishopMoving < 8 && !bishopBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row + bishopMoving][col - bishopMoving] == 0) {
+								this[color].push(
+									numToCol(col) + (8 - row) + '|' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
+								);
+							} else if (this.board[row + bishopMoving][col - bishopMoving] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'k' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else if (
+								blackPieces.some((v) => this.board[row + bishopMoving][col - bishopMoving].includes(v))
+							) {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'x' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else {
+								//samme farge brikke
+								bishopBlocking = true;
+							}
+						} catch (e) {}
+						bishopMoving++;
+					}
+					//down right
+					bishopMoving = 1;
+					bishopBlocking = false;
+					while (bishopMoving < 8 && !bishopBlocking) {
+						try {
+							//hvis fri rute
+							if (this.board[row + bishopMoving][col + bishopMoving] == 0) {
+								this[color].push(
+									numToCol(col) + (8 - row) + '|' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
+								);
+							} else if (this.board[row + bishopMoving][col + bishopMoving] == '♚') {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'k' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else if (
+								blackPieces.some((v) => this.board[row + bishopMoving][col + bishopMoving].includes(v))
+							) {
+								//hvis motsatt brikke
+								this[color].push(
+									numToCol(col) + (8 - row) + 'x' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
+								);
+								bishopBlocking = true;
+							} else {
+								//samme farge brikke
+								bishopBlocking = true;
+							}
+						} catch (e) {}
+						bishopMoving++;
+					}
+				}
+
+				//KING
+				if (p == '♔') {
+					const kingAround1 = [ -1, -1, -1, 0, 1, 1, 1, 0 ];
+					const kingAround2 = [ -1, 0, 1, 1, 1, 0, -1, -1 ];
+					for (let j = 0; j < 8; j++) {
+						try {
+							if (
+								this.board[row + kingAround1[j]][col + kingAround2[j]] == 0 ||
+								this.board[row + kingAround1[j]][col + kingAround2[j]] == 1
+							) {
+								this.possibleMoves.push(
+									numToCol(col) +
+										(8 - row) +
+										'|' +
+										numToCol(col + kingAround2[j]) +
+										(8 - kingAround1[j] - row)
+								);
+							} else if (
+								blackPieces.some((v) => this.board[row + kingAround1[j]][col + kingAround2[j]].includes(v))
+							) {
+								this.possibleMoves.push(
+									numToCol(col) +
+										(8 - row) +
+										'x' +
+										numToCol(col + kingAround2[j]) +
+										(8 - kingAround1[j] - row)
+								);
+							}
+						} catch (e) {}
+					}
+				}
+			});
+		});
+	}
+	isWhiteCheck() {
+		return false;
 	}
 }
 
@@ -254,6 +422,9 @@ function checkForCheck() {}
 function numToCol(n) {
 	return String.fromCharCode(n + 97);
 }
+function colToNum(na) {
+	return na.charCodeAt(0) - 97;
+}
 
 function objectToCoord(obj) {
 	return;
@@ -261,8 +432,8 @@ function objectToCoord(obj) {
 
 const g = new Game();
 g.printBoard();
-g.calculateMoves();
-console.log(g.possibleMoves);
+g.calculateMovesWhite();
+console.log(g[color]);
 
 //check move
 //out of board
