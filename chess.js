@@ -2,7 +2,7 @@ const whitePieces = [ '♙', '♖', '♘', '♗', '♕' ];
 const blackPieces = [ '♟', '♜', '♞', '♝', '♛' ];
 const whiteKing = '♔';
 const blackKing = '♚';
-class Game {
+class Board {
 	constructor() {
 		this.board = [
 			[ '♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜' ],
@@ -16,7 +16,6 @@ class Game {
 		];
 		this.turn = 0;
 		this.player = 'white';
-		this.incheck = false;
 		this.white = [];
 		this.black = [];
 	}
@@ -34,16 +33,8 @@ class Game {
 		console.log(b);
 	}
 	doMove(desc) {
-		let from = desc.slice(0, 2);
-		console.log(from);
-		let to = desc.slice(3);
-		console.log(to);
-		let nextBoard = new Game();
-		nextBoard.board = this.board;
-		nextBoard.board[8 - to[1]][colToNum(to[0])] = nextBoard.board[8 - from[1]][colToNum(from[0])];
-		nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
+		const nextBoard = this.simulateBoard(desc);
 		this.board = nextBoard.board;
-		this.printBoard();
 		this.turn++;
 		if (this.player == 'white') {
 			this.player = 'black';
@@ -51,23 +42,71 @@ class Game {
 			this.player = 'white';
 		}
 	}
-	calculateMoves(color) {
-		this[color] = [];
-		if (turn % 2 == 0) {
-			//start pawn
-			this.board[6].forEach((e, col) => {
-				if (e == '♙' && this.board[5][col] == '0' && this.board[4][col] == '0') {
-					if (!this.isWhiteCheck()) {
-						this[color].push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
-					}
+	simulateBoard(move) {
+		this.printBoard();
+		let from = move.slice(0, 2);
+		let to = move.slice(3);
+		const nextBoard = new Board();
+		nextBoard.board = this.board;
+		nextBoard.board[8 - to[1]][colToNum(to[0])] = nextBoard.board[8 - from[1]][colToNum(from[0])];
+		nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
+		return nextBoard;
+	}
+	checkMove(move, color) {
+		let simBoard = this.simulateBoard(move);
+		let retO = false;
+		if (color == 'white') {
+			let a = simBoard.calculateMovesRaw('black');
+			a.forEach((el) => {
+				if (el.indexOf('k') > -1) {
+					retO = true;
 				}
 			});
 		} else {
+			let a = simBoard.calculateMovesRaw('white');
+			a.forEach((el) => {
+				if (el.indexOf('k') > -1) {
+					retO = true;
+				}
+			});
+		}
+		return retO;
+	}
+	calculateMoves(color) {
+		this[color] = [];
+		let tempMoves = this.calculateMovesRaw(color);
+		console.log(tempMoves);
+		tempMoves.forEach((move, i) => {
+			if (this.checkMove(move, color)) {
+				tempMoves.splice(i, 1);
+			}
+		});
+		this[color] = tempMoves;
+	}
+	calculateMovesRaw(color) {
+		this[color] = [];
+		let tempMoves = [];
+		let pieces = whitePieces;
+		let opponent = blackPieces;
+		let opponentKing = blackKing;
+		let selfKing = whiteKing;
+		let opponentColor = 'black';
+		if (color == 'white') {
+			//start pawn
 			this.board[6].forEach((e, col) => {
-				if (e == '♙' && this.board[5][col] == '0' && this.board[4][col] == '0') {
-					if (!this.isWhiteCheck()) {
-						this[color].push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
-					}
+				if (e == pieces[0] && this.board[5][col] == '0' && this.board[4][col] == '0') {
+					tempMoves.push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
+				}
+			});
+		} else {
+			pieces = blackPieces;
+			opponent = whitePieces;
+			opponentKing = whiteKing;
+			selfKing = blackKing;
+			opponentColor = 'white';
+			this.board[1].forEach((e, col) => {
+				if (e == pieces[0] && this.board[2][col] == '0' && this.board[3][col] == '0') {
+					tempMoves.push(numToCol(col) + 7 + '|' + numToCol(col) + 5);
 				}
 			});
 		}
@@ -75,46 +114,84 @@ class Game {
 		this.board.forEach((arr, row) => {
 			arr.forEach((p, col) => {
 				//PAWN
-				if (p == '♙') {
+				if (color == 'white' && p == pieces[0]) {
 					try {
 						if (this.board[row - 1][col] == 0) {
-							this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row));
+							tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row));
 						}
 					} catch (e) {}
 					//capture left king
 					try {
-						if (this.board[row - 1][col - 1] == '♚') {
-							this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 + 1 - row));
+						if (this.board[row - 1][col - 1] == opponentKing) {
+							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 + 1 - row));
 						}
 					} catch (e) {}
 					//capture right king
 					try {
-						if (this.board[row - 1][col + 1] == '♚') {
-							this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 + 1 - row));
+						if (this.board[row - 1][col + 1] == opponentKing) {
+							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 + 1 - row));
 						}
 					} catch (e) {}
 					//capture left (1 is en passant)
 					try {
 						if (
-							blackPieces.some((v) => this.board[row - 1][col - 1].includes(v)) ||
+							opponent.some((v) => this.board[row - 1][col - 1].includes(v)) ||
 							this.board[row - 1][col - 1] == 1
 						) {
-							this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row));
+							tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row));
 						}
 					} catch (e) {}
 					//capture right (1 is en passant)
 					try {
 						if (
-							blackPieces.some((v) => this.board[row - 1][col + 1].includes(v)) ||
-							this.board[row - 1][col - 1] == 1
+							opponent.some((v) => this.board[row - 1][col + 1].includes(v)) ||
+							this.board[row - 1][col + 1] == 1
 						) {
-							his[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row));
+							tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row));
+						}
+					} catch (e) {}
+				}
+
+				if (color == 'black' && p == pieces[0]) {
+					try {
+						if (this.board[row + 1][col] == 0) {
+							tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - 1 - row));
+						}
+					} catch (e) {}
+					//capture left king
+					try {
+						if (this.board[row + 1][col - 1] == opponentKing) {
+							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 - 1 - row));
+						}
+					} catch (e) {}
+					//capture right king
+					try {
+						if (this.board[row + 1][col + 1] == opponentKing) {
+							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 - 1 - row));
+						}
+					} catch (e) {}
+					//capture left (1 is en passant)
+					try {
+						if (
+							opponent.some((v) => this.board[row - 1][col - 1].includes(v)) ||
+							this.board[row + 1][col - 1] == 1
+						) {
+							tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 - 1 - row));
+						}
+					} catch (e) {}
+					//capture right (1 is en passant)
+					try {
+						if (
+							opponent.some((v) => this.board[row - 1][col + 1].includes(v)) ||
+							this.board[row + 1][col - 1] == 1
+						) {
+							his[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 - 1 - row));
 						}
 					} catch (e) {}
 				}
 
 				//ROOK and QUEEN straight
-				if (p == '♖' || p == '♕') {
+				if (p == pieces[1] || p == pieces[4]) {
 					let rookMoving = 1;
 					let rookBlocking = false;
 					//oppover
@@ -122,14 +199,14 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row - rookMoving][col] == 0) {
-								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + rookMoving - row));
-							} else if (this.board[row - rookMoving][col] == '♚') {
+								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + rookMoving - row));
+							} else if (this.board[row - rookMoving][col] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 + rookMoving - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 + rookMoving - row));
 								rookBlocking = true;
-							} else if (blackPieces.some((v) => this.board[row - rookMoving][col].includes(v))) {
+							} else if (opponent.some((v) => this.board[row - rookMoving][col].includes(v))) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 + rookMoving - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 + rookMoving - row));
 								rookBlocking = true;
 							} else {
 								//samme farge brikke
@@ -145,14 +222,14 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row][col + rookMoving] == 0) {
-								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col + rookMoving) + (8 - row));
-							} else if (this.board[row][col + rookMoving] == '♚') {
+								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col + rookMoving) + (8 - row));
+							} else if (this.board[row][col + rookMoving] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col + rookMoving) + (8 - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + rookMoving) + (8 - row));
 								rookBlocking = true;
-							} else if (blackPieces.some((v) => this.board[row][col + rookMoving].includes(v))) {
+							} else if (opponent.some((v) => this.board[row][col + rookMoving].includes(v))) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col + rookMoving) + (8 - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col + rookMoving) + (8 - row));
 								rookBlocking = true;
 							} else {
 								//samme farge brikke
@@ -168,14 +245,14 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row][col - rookMoving] == 0) {
-								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col - rookMoving) + (8 - row));
-							} else if (this.board[row][col - rookMoving] == '♚') {
+								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col - rookMoving) + (8 - row));
+							} else if (this.board[row][col - rookMoving] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col - rookMoving) + (8 - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - rookMoving) + (8 - row));
 								rookBlocking = true;
-							} else if (blackPieces.some((v) => this.board[row][col - rookMoving].includes(v))) {
+							} else if (opponent.some((v) => this.board[row][col - rookMoving].includes(v))) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col - rookMoving) + (8 - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - rookMoving) + (8 - row));
 								rookBlocking = true;
 							} else {
 								//samme farge brikke
@@ -191,14 +268,14 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row + rookMoving][col] == 0) {
-								this[color].push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - rookMoving - row));
-							} else if (this.board[row + rookMoving][col] == '♚') {
+								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - rookMoving - row));
+							} else if (this.board[row + rookMoving][col] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 - rookMoving - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 - rookMoving - row));
 								rookBlocking = true;
-							} else if (blackPieces.some((v) => this.board[row + rookMoving][col].includes(v))) {
+							} else if (opponent.some((v) => this.board[row + rookMoving][col].includes(v))) {
 								//hvis motsatt brikke
-								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 - rookMoving - row));
+								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 - rookMoving - row));
 								rookBlocking = true;
 							} else {
 								//samme farge brikke
@@ -210,7 +287,7 @@ class Game {
 				}
 
 				//KNIGHT
-				if (p == '♘') {
+				if (p == pieces[2]) {
 					const knightAround1 = [ -2, -1, 1, 2, -2, -1, 1, 2 ];
 					const knightAround2 = [ 1, 2, -2, -1, -1, -2, 2, 1 ];
 					for (let j = 0; j < 8; j++) {
@@ -219,15 +296,15 @@ class Game {
 								this.board[row + knightAround1[j]][col + knightAround2[j]] == 0 ||
 								this.board[row + knightAround1[j]][col + knightAround2[j]] == 1
 							) {
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) +
 										(8 - row) +
 										'|' +
 										numToCol(col + knightAround2[j]) +
 										(8 - knightAround1[j] - row)
 								);
-							} else if (this.board[row + knightAround1[j]][col + knightAround2[j]] == '♚') {
-								this[color].push(
+							} else if (this.board[row + knightAround1[j]][col + knightAround2[j]] == opponentKing) {
+								tempMoves.push(
 									numToCol(col) +
 										(8 - row) +
 										'k' +
@@ -235,11 +312,9 @@ class Game {
 										(8 - knightAround1[j] - row)
 								);
 							} else if (
-								blackPieces.some((v) =>
-									this.board[row + knightAround1[j]][col + knightAround2[j]].includes(v)
-								)
+								opponent.some((v) => this.board[row + knightAround1[j]][col + knightAround2[j]].includes(v))
 							) {
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) +
 										(8 - row) +
 										'x' +
@@ -251,7 +326,7 @@ class Game {
 					}
 				}
 				//BISHOP
-				if (p == '♗' || p == '♕') {
+				if (p == pieces[3] || p == pieces[4]) {
 					let bishopMoving = 1;
 					let bishopBlocking = false;
 					//up right
@@ -259,20 +334,20 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row - bishopMoving][col + bishopMoving] == 0) {
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + '|' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
 								);
-							} else if (this.board[row - bishopMoving][col + bishopMoving] == '♚') {
+							} else if (this.board[row - bishopMoving][col + bishopMoving] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'k' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
 								);
 								bishopBlocking = true;
 							} else if (
-								blackPieces.some((v) => this.board[row - bishopMoving][col + bishopMoving].includes(v))
+								opponent.some((v) => this.board[row - bishopMoving][col + bishopMoving].includes(v))
 							) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'x' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
 								);
 								bishopBlocking = true;
@@ -290,20 +365,20 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row - bishopMoving][col - bishopMoving] == 0) {
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + '|' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
 								);
-							} else if (this.board[row - bishopMoving][col - bishopMoving] == '♚') {
+							} else if (this.board[row - bishopMoving][col - bishopMoving] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'k' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
 								);
 								bishopBlocking = true;
 							} else if (
-								blackPieces.some((v) => this.board[row - bishopMoving][col - bishopMoving].includes(v))
+								opponent.some((v) => this.board[row - bishopMoving][col - bishopMoving].includes(v))
 							) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'x' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
 								);
 								bishopBlocking = true;
@@ -321,20 +396,20 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row + bishopMoving][col - bishopMoving] == 0) {
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + '|' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
 								);
-							} else if (this.board[row + bishopMoving][col - bishopMoving] == '♚') {
+							} else if (this.board[row + bishopMoving][col - bishopMoving] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'k' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
 								);
 								bishopBlocking = true;
 							} else if (
-								blackPieces.some((v) => this.board[row + bishopMoving][col - bishopMoving].includes(v))
+								opponent.some((v) => this.board[row + bishopMoving][col - bishopMoving].includes(v))
 							) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'x' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
 								);
 								bishopBlocking = true;
@@ -352,20 +427,20 @@ class Game {
 						try {
 							//hvis fri rute
 							if (this.board[row + bishopMoving][col + bishopMoving] == 0) {
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + '|' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
 								);
-							} else if (this.board[row + bishopMoving][col + bishopMoving] == '♚') {
+							} else if (this.board[row + bishopMoving][col + bishopMoving] == opponentKing) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'k' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
 								);
 								bishopBlocking = true;
 							} else if (
-								blackPieces.some((v) => this.board[row + bishopMoving][col + bishopMoving].includes(v))
+								opponent.some((v) => this.board[row + bishopMoving][col + bishopMoving].includes(v))
 							) {
 								//hvis motsatt brikke
-								this[color].push(
+								tempMoves.push(
 									numToCol(col) + (8 - row) + 'x' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
 								);
 								bishopBlocking = true;
@@ -379,7 +454,7 @@ class Game {
 				}
 
 				//KING
-				if (p == '♔') {
+				if (p == selfKing) {
 					const kingAround1 = [ -1, -1, -1, 0, 1, 1, 1, 0 ];
 					const kingAround2 = [ -1, 0, 1, 1, 1, 0, -1, -1 ];
 					for (let j = 0; j < 8; j++) {
@@ -388,7 +463,7 @@ class Game {
 								this.board[row + kingAround1[j]][col + kingAround2[j]] == 0 ||
 								this.board[row + kingAround1[j]][col + kingAround2[j]] == 1
 							) {
-								this.possibleMoves.push(
+								tempMoves.push(
 									numToCol(col) +
 										(8 - row) +
 										'|' +
@@ -396,9 +471,9 @@ class Game {
 										(8 - kingAround1[j] - row)
 								);
 							} else if (
-								blackPieces.some((v) => this.board[row + kingAround1[j]][col + kingAround2[j]].includes(v))
+								opponent.some((v) => this.board[row + kingAround1[j]][col + kingAround2[j]].includes(v))
 							) {
-								this.possibleMoves.push(
+								tempMoves.push(
 									numToCol(col) +
 										(8 - row) +
 										'x' +
@@ -411,13 +486,27 @@ class Game {
 				}
 			});
 		});
+		return tempMoves;
 	}
-	isWhiteCheck() {
+	isCheck(color) {
+		if (color == 'white') {
+			this.calculateMoves('black', false);
+			this.black.forEach((e) => {
+				if (e.includes('k')) {
+					return true;
+				}
+			});
+		} else {
+			this.calculateMoves('white', false);
+			this.white.forEach((e) => {
+				if (e.includes('k')) {
+					return true;
+				}
+			});
+		}
 		return false;
 	}
 }
-
-function checkForCheck() {}
 
 function numToCol(n) {
 	return String.fromCharCode(n + 97);
@@ -426,14 +515,10 @@ function colToNum(na) {
 	return na.charCodeAt(0) - 97;
 }
 
-function objectToCoord(obj) {
-	return;
-}
-
-const g = new Game();
+const g = new Board();
 g.printBoard();
-g.calculateMovesWhite();
-console.log(g[color]);
+g.calculateMoves('white');
+console.log(g.white);
 
 //check move
 //out of board
