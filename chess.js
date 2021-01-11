@@ -41,15 +41,22 @@ class Board {
 		} else {
 			this.player = 'white';
 		}
+		this.printBoard();
+		this.calculateMoves(this.player);
+		console.log(this[this.player]);
+		return this[this.player];
 	}
 	simulateBoard(move) {
-		this.printBoard();
+		//this.printBoard();
 		let from = move.slice(0, 2);
 		let to = move.slice(3);
-		const nextBoard = new Board();
-		nextBoard.board = this.board;
+		let nextBoard = new Board();
+		nextBoard.board = this.board.map(function(arr) {
+			return [ ...arr ];
+		});
 		nextBoard.board[8 - to[1]][colToNum(to[0])] = nextBoard.board[8 - from[1]][colToNum(from[0])];
 		nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
+		//nextBoard.printBoard();
 		return nextBoard;
 	}
 	checkMove(move, color) {
@@ -75,7 +82,7 @@ class Board {
 	calculateMoves(color) {
 		this[color] = [];
 		let tempMoves = this.calculateMovesRaw(color);
-		console.log(tempMoves);
+		//console.log(tempMoves);
 		tempMoves.forEach((move, i) => {
 			if (this.checkMove(move, color)) {
 				tempMoves.splice(i, 1);
@@ -531,3 +538,8 @@ console.log(g.white);
 //checkmate
 //in check
 //rokade
+
+let ans = g[g.player];
+while (ans.length > 0 || g.turn > 50) {
+	ans = g.doMove(ans[Math.floor(Math.random() * ans.length)]);
+}
