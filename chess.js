@@ -18,6 +18,7 @@ class Board {
 		this.player = 'white';
 		this.white = [];
 		this.black = [];
+		this.playedMoves = [];
 	}
 	printBoard() {
 		let b = '';
@@ -32,8 +33,8 @@ class Board {
 		console.log('	a	b	c	d	e	f	g	h');
 		console.log(b);
 	}
-	doMove(desc) {
-		const nextBoard = this.simulateBoard(desc);
+	doMove(move) {
+		const nextBoard = this.simulateBoard(move);
 		this.board = nextBoard.board;
 		this.turn++;
 		if (this.player == 'white') {
@@ -43,6 +44,7 @@ class Board {
 		}
 		this.printBoard();
 		this.calculateMoves(this.player);
+		this.playedMoves.push(move);
 		console.log(this[this.player]);
 		return this[this.player];
 	}
@@ -538,6 +540,11 @@ console.log(g.white);
 //checkmate
 //in check
 //rokade
+//promote
+//50 trekks regel
+//sjakkmatt i 1
+//sjakkmatt i 2
+//flere brikker i 1/2
 
 let ans = g[g.player];
 while (ans.length > 0 || g.turn > 50) {
