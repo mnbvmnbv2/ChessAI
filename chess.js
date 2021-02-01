@@ -666,6 +666,7 @@ function continueGame() {
 		requestAnimationFrame(continueGame);
 	}
 }
+
 console.time('⏰');
 intelligentGame();
 function intelligentGame() {
