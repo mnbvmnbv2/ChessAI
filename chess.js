@@ -12,6 +12,8 @@ for(let i = 0; i < 64; i++){
 	boardEl.appendChild(squareEl);
 }
 
+const squares = Array.from(document.getElementsByClassName('square'));
+const squaresLength = squares.length;
 
 class Board {
 	constructor() {
@@ -32,18 +34,24 @@ class Board {
 		this.black = [];
 		this.playedMoves = [];
 	}
-	printBoard() {
+	consoleBoard() {
 		let b = '';
-		this.board.forEach((r, i) => {
-			let row = 8 - i;
-			this.board[i].forEach((e) => {
-				row += '	' + e;
+		this.board.forEach((r) => {
+			r.forEach((e) => {
+				b += e + '	';
 			});
-			row += '\n';
-			b += row;
+			b += '\n';
 		});
-		console.log('	a	b	c	d	e	f	g	h');
 		console.log(b);
+	}
+	printBoard(){
+		squares.forEach((sqr, i) => {
+			if(this.board[Math.floor(i/8)][i%8]){
+				sqr.innerHTML = this.board[Math.floor(i/8)][i%8];
+			} else {
+				sqr.innerHTML = '';
+			}
+		})
 	}
 	doMove(move) {
 		const nextBoard = this.simulateBoard(move);
@@ -57,6 +65,7 @@ class Board {
 		} else {
 			this.player = 'white';
 		}
+		this.consoleBoard();
 		this.printBoard();
 		this.calculateMoves(this.player);
 		this.playedMoves.push(move);
@@ -640,7 +649,7 @@ function colToNum(na) {
 }
 
 const g = new Board();
-g.printBoard();
+g.consoleBoard();
 g.calculateMoves('white');
 console.log(g.white);
 

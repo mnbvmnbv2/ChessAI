@@ -1,7 +1,3 @@
-body{
-    font-size: 2em;
-}
-
 #board {
     width: 80vh;
     height: 80vh;
@@ -9,6 +5,7 @@ body{
     grid-template-columns: repeat(8,10vh);
     grid-template-rows: repeat(8,10vh);
     border: 1px solid #777;
+    font-size: 10vh;
 }
 
 .square {
