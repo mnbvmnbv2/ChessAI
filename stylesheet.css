@@ -1,0 +1,16 @@
+body{
+    font-size: 2em;
+}
+
+#board {
+    width: 80vh;
+    height: 80vh;
+    display: grid;
+    grid-template-columns: repeat(8,10vh);
+    grid-template-rows: repeat(8,10vh);
+    border: 1px solid #777;
+}
+
+.square {
+    cursor: pointer;
+}
