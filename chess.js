@@ -223,7 +223,7 @@ class Board {
 				else if (p == pieces[color].rook || p == pieces[color].queen) {
 					outerLoop: for (let i = 0; i < 4; i++) {
 						//for hver retning
-						for (let j = 0; j < 7; j++) {
+						for (let j = 1; j < 7; j++) {
 							try {
 								let sqr = this.board[row - rookDir[i][0] * j][col + rookDir[i][1] * j];
 								let to = numToCol(col + rookDir[i][1] * j) + (8 + rookDir[i][0] * j - row);
@@ -271,7 +271,7 @@ class Board {
 				else if (p == pieces[color].bishop || p == pieces[color].queen) {
 					outerLoop: for (let i = 0; i < 4; i++) {
 						//up right
-						for (let j = 0; j < 7; j++) {
+						for (let j = 1; j < 7; j++) {
 							try {
 								let sqr = this.board[row - bishopDir[i][0] * j][col + bishopDir[i][1] * j];
 								let to = numToCol(col + bishopDir[i][1] * j) + (8 + bishopDir[i][0] * j - row);

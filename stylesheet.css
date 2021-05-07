@@ -4,13 +4,14 @@
 	max-width: 96vw;
 	max-height: 96vw;
 	display: grid;
-	grid-template-columns: repeat(8, auto);
-	grid-template-rows: repeat(8, auto);
+	grid-template-columns: repeat(8, 1fr);
+	grid-template-rows: repeat(8, 1fr);
 	border: 1px solid #777;
-	font-size: max(10vh, 40px);
 }
 
 .square {
 	cursor: pointer;
 	line-height: 1.1;
+	font-size: 650%;
+	text-align: center;
 }
