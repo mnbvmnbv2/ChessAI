@@ -28,7 +28,7 @@ class Board {
 		});
 		console.log(line);
 		console.log(this.player);
-		console.log(this[this.player]);
+		console.log('moves', this[this.player]);
 	}
 	printBoard() {
 		squares.forEach((sqr, i) => {
@@ -59,7 +59,7 @@ class Board {
 	simulateBoard(move) {
 		let from = move.slice(0, 2);
 		let to = move.slice(3, 5);
-		let piece = move.slice(5);
+		let piece = move.slice(5, 6);
 		let nextBoard = new Board();
 		nextBoard.board = this.board.map(function (arr) {
 			return [...arr];
@@ -87,11 +87,13 @@ class Board {
 				removeMoves.push(move);
 			}
 		});
+
 		tempMoves = tempMoves.filter((m) => !removeMoves.includes(m));
 		this[color] = [...tempMoves];
 		return tempMoves;
 	}
 	calculateMovesRaw(color) {
+		//denne kjøres 1 gang for mye
 		let tempMoves = [];
 		//check every square
 		this.board.forEach((arr, row) => {
@@ -99,27 +101,27 @@ class Board {
 				let from = numToCol(col) + (8 - row);
 				//PAWN
 				if (p == pieces[color].pawn) {
-					tempMoves.push(this.calculatePawn(from, row, col, color));
+					this.calculatePawn(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 				//ROOK
 				else if (p == pieces[color].rook) {
-					tempMoves.push(this.calculateRook(from, row, col, color));
+					this.calculateRook(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 				//KNIGHT
 				else if (p == pieces[color].knight) {
-					tempMoves.push(this.calculateKnight(from, row, col, color));
+					this.calculateKnight(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 				//BISHOP
 				else if (p == pieces[color].bishop) {
-					tempMoves.push(this.calculateBishop(from, row, col, color));
+					this.calculateBishop(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 				//QUEEN
 				else if (p == pieces[color].queen) {
-					tempMoves.push(this.calculateQueen(from, row, col, color));
+					this.calculateQueen(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 				//KING
 				else if (p == pieces[color].king) {
-					tempMoves.push(this.calculateKing(from, row, col, color));
+					this.calculateKing(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 			});
 		});
@@ -366,6 +368,7 @@ class Board {
 		});
 		return false;
 	}
+	nameOfSquare(number) {}
 }
 
 const g = new Board();
@@ -386,6 +389,7 @@ function intelligentGame() {
 	console.time('⏰');
 	let moves = g[g.player];
 	let move = g[g.player][Math.floor(Math.random() * moves.length)];
+	console.log('heihei', move);
 
 	moves.forEach((m) => {
 		let a = g.simulateBoard(m);
