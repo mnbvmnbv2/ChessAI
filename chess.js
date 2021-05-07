@@ -91,7 +91,9 @@ class Board {
 		});
 		console.log('turn: ' + g.turn + ', move: ' + move);
 		this.turn++;
+		console.log(this.player);
 		this.player = oppositeColor(this.player);
+		console.log(this.player);
 		this.consoleBoard();
 		this.printBoard();
 		this.calculateMoves(this.player);
@@ -301,7 +303,11 @@ class Board {
 				//KING
 				else if (p == pieces[color].king) {
 					for (let j = 0; j < 8; j++) {
-						try {
+						if (row + kingAround1[j] == 8) {
+						} else if (row + kingAround1[j] == -1) {
+						} else if (col + kingAround2[j] == 8) {
+						} else if (col + kingAround2[j] == -1) {
+						} else {
 							let sqr = this.board[row + kingAround1[j]][col + kingAround2[j]];
 							let to = numToCol(col + kingAround2[j]) + (8 - kingAround1[j] - row);
 							if (sqr == 0 || sqr == 1) {
@@ -311,7 +317,7 @@ class Board {
 							} else if (isPiece(oppositeColor(color), sqr)) {
 								tempMoves.push(from + 'x' + to);
 							}
-						} catch (e) {}
+						}
 					}
 				}
 			});
@@ -367,7 +373,6 @@ while (ans.length > 0 || g.turn > 50) {
 }*/
 
 let ans = g[g.player];
-//continueGame();
 function continueGame() {
 	ans = g.doMove(ans[Math.floor(Math.random() * ans.length)]);
 	if (ans.length > 0 && g.numberOfPieces > 2) {
@@ -375,29 +380,22 @@ function continueGame() {
 	}
 }
 
-console.time('⏰');
 intelligentGame();
 function intelligentGame() {
+	console.time('⏰');
 	let moves = g[g.player];
-	let doMove = g[g.player][Math.floor(Math.random() * ans.length)];
-	if ((g.player = 'white')) {
-		moves.forEach((m) => {
-			let a = g.simulateBoard(m);
-			if (a.calculateMoves('black').length == 0) {
-				doMove = m;
-			}
-		});
-	} else {
-		moves.forEach((m) => {
-			let a = g.simulateBoard(m);
-			if (a.calculateMoves('white').length == 0) {
-				doMove = m;
-			}
-		});
-	}
-	g.doMove(doMove);
+	let move = g[g.player][Math.floor(Math.random() * moves.length)];
+
+	moves.forEach((m) => {
+		let a = g.simulateBoard(m);
+		if (a.calculateMoves(oppositeColor(g.player)).length == 0) {
+			move = m;
+		}
+	});
+
+	g.doMove(move);
 	if (g[g.player].length > 0 && g.numberOfPieces > 2) {
-		requestAnimationFrame(continueGame);
+		requestAnimationFrame(intelligentGame);
 	}
+	console.timeEnd('⏰');
 }
-console.timeEnd('⏰');
