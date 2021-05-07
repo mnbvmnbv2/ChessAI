@@ -160,6 +160,7 @@ class Board {
 			arr.forEach((p, col) => {
 				//PAWN
 				let dir = color == 'white' ? 1 : -1;
+				let endPawnRow = color == 'white' ? 1 : 6;
 				let from = numToCol(col) + (8 - row);
 
 				if (p == pieces[color].pawn) {
@@ -169,7 +170,7 @@ class Board {
 							let to = numToCol(col) + (8 + dir - row);
 
 							//promote
-							if (row == 1) {
+							if (row == endPawnRow) {
 								tempMoves.push(from + '|' + to + pieces[color].rook);
 								tempMoves.push(from + '|' + to + pieces[color].knight);
 								tempMoves.push(from + '|' + to + pieces[color].bishop);
@@ -194,7 +195,7 @@ class Board {
 					try {
 						if (isPiece(oppositeColor(color), this.board[row - dir][col - 1]) || this.board[row - dir][col - 1] == 1) {
 							let to = numToCol(col - 1) + (8 + dir - row);
-							if (row == 1) {
+							if (row == endPawnRow) {
 								tempMoves.push(from + 'x' + to + pieces[color].rook);
 								tempMoves.push(from + 'x' + to + pieces[color].knight);
 								tempMoves.push(from + 'x' + to + pieces[color].bishop);
@@ -208,7 +209,7 @@ class Board {
 					try {
 						if (isPiece(oppositeColor(color), this.board[row - dir][col + 1]) || this.board[row - dir][col + 1] == 1) {
 							let to = numToCol(col + 1) + (8 + dir - row);
-							if (row == 1) {
+							if (row == endPawnRow) {
 								tempMoves.push(from + 'x' + to + pieces[color].rook);
 								tempMoves.push(from + 'x' + to + pieces[color].knight);
 								tempMoves.push(from + 'x' + to + pieces[color].bishop);
