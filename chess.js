@@ -1,32 +1,63 @@
-const whitePieces = [ '♙', '♖', '♘', '♗', '♕' ];
-const blackPieces = [ '♟', '♜', '♞', '♝', '♛' ];
-const whiteKing = '♔';
-const blackKing = '♚';
+const pieces = {
+	white: {
+		pawn: '♙',
+		rook: '♖',
+		knight: '♘',
+		bishop: '♗',
+		queen: '♕',
+		king: '♔',
+	},
+	black: {
+		pawn: '♟',
+		rook: '♜',
+		knight: '♞',
+		bishop: '♝',
+		queen: '♛',
+		king: '♚',
+	},
+};
+const rookDir = [
+	[1, 0],
+	[0, 1],
+	[-1, 0],
+	[0, -1],
+];
+const bishopDir = [
+	[1, 1],
+	[-1, 1],
+	[-1, -1],
+	[1, -1],
+];
+const knightAround1 = [-2, -1, 1, 2, -2, -1, 1, 2];
+const knightAround2 = [1, 2, -2, -1, -1, -2, 2, 1];
 
-const boardEl = document.getElementById("board");
+const kingAround1 = [-1, -1, -1, 0, 1, 1, 1, 0];
+const kingAround2 = [-1, 0, 1, 1, 1, 0, -1, -1];
 
-for(let i = 0; i < 64; i++){
-	let squareEl = document.createElement('div');
-	squareEl.classList.add('square');
-	squareEl.style.backgroundColor = "#" + (((i+Math.floor(i/8))%2) ? "F6F9B2" : "437952");
-	boardEl.appendChild(squareEl);
+function oppositeColor(color) {
+	if (color == 'black') {
+		return 'white';
+	} else {
+		return 'black';
+	}
 }
-
-const squares = Array.from(document.getElementsByClassName('square'));
-const squaresLength = squares.length;
+function isPiece(color, value) {
+	return Object.values(pieces[color]).splice(0, 5).includes(value);
+}
 
 class Board {
 	constructor() {
 		this.board = [
-			[ '♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜' ],
-			[ '♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟' ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ '♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙' ],
-			[ '♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖' ]
+			['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+			['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+			['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
 		];
+		//kan fjernes
 		this.turn = 0;
 		this.numberOfPieces = 32;
 		this.player = 'white';
@@ -35,36 +66,32 @@ class Board {
 		this.playedMoves = [];
 	}
 	consoleBoard() {
-		let b = '';
-		this.board.forEach((r) => {
-			r.forEach((e) => {
-				b += e + '	';
+		let line = '';
+		this.board.forEach((row) => {
+			row.forEach((el) => {
+				line += el + '	';
 			});
-			b += '\n';
+			line += '\n';
 		});
-		console.log(b);
+		console.log(line);
 	}
-	printBoard(){
+	printBoard() {
 		squares.forEach((sqr, i) => {
-			if(this.board[Math.floor(i/8)][i%8]){
-				sqr.innerHTML = this.board[Math.floor(i/8)][i%8];
+			if (this.board[Math.floor(i / 8)][i % 8]) {
+				sqr.innerHTML = this.board[Math.floor(i / 8)][i % 8];
 			} else {
 				sqr.innerHTML = '';
 			}
-		})
+		});
 	}
 	doMove(move) {
 		const nextBoard = this.simulateBoard(move);
-		this.board = nextBoard.board.map(function(arr) {
-			return [ ...arr ];
+		this.board = nextBoard.board.map(function (arr) {
+			return [...arr];
 		});
 		console.log('turn: ' + g.turn + ', move: ' + move);
 		this.turn++;
-		if (this.player == 'white') {
-			this.player = 'black';
-		} else {
-			this.player = 'white';
-		}
+		this.player = oppositeColor(this.player);
 		this.consoleBoard();
 		this.printBoard();
 		this.calculateMoves(this.player);
@@ -76,52 +103,29 @@ class Board {
 		return this[this.player];
 	}
 	simulateBoard(move) {
-		//promote
-		if (move.length == 6) {
-			let from = move.slice(0, 2);
-			let to = move.slice(3, 5);
-			let pis = move.slice(5);
-			let nextBoard = new Board();
-			nextBoard.board = this.board.map(function(arr) {
-				return [ ...arr ];
-			});
-			nextBoard.board[8 - to[1]][colToNum(to[0])] = pis;
-			nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
-			return nextBoard;
-		} else {
-			let from = move.slice(0, 2);
-			let to = move.slice(3);
-			let nextBoard = new Board();
-			nextBoard.board = this.board.map(function(arr) {
-				return [ ...arr ];
-			});
-			nextBoard.board[8 - to[1]][colToNum(to[0])] = nextBoard.board[8 - from[1]][colToNum(from[0])];
-			nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
-			return nextBoard;
-		}
+		let from = move.slice(0, 2);
+		let to = move.slice(3, 5);
+		let piece = move.slice(5);
+		let nextBoard = new Board();
+		nextBoard.board = this.board.map(function (arr) {
+			return [...arr];
+		});
+		nextBoard.board[8 - to[1]][colToNum(to[0])] = move.length == 6 ? piece : nextBoard.board[8 - from[1]][colToNum(from[0])];
+		nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
+		return nextBoard;
 	}
 	checkMove(move, color) {
 		let simBoard = this.simulateBoard(move);
 		let retO = false;
-		if (color == 'white') {
-			let a = simBoard.calculateMovesRaw('black');
-			a.forEach((el) => {
-				if (el.indexOf('k') > -1) {
-					retO = true;
-				}
-			});
-		} else {
-			let a = simBoard.calculateMovesRaw('white');
-			a.forEach((el) => {
-				if (el.indexOf('k') > -1) {
-					retO = true;
-				}
-			});
-		}
+		let a = simBoard.calculateMovesRaw(oppositeColor(color));
+		a.forEach((el) => {
+			if (el.indexOf('k') > -1) {
+				retO = true;
+			}
+		});
 		return retO;
 	}
 	calculateMoves(color) {
-		this[color] = [];
 		let tempMoves = this.calculateMovesRaw(color);
 		let removeMoves = [];
 		tempMoves.forEach((move, i) => {
@@ -130,33 +134,23 @@ class Board {
 			}
 		});
 		tempMoves = tempMoves.filter((m) => !removeMoves.includes(m));
-		this[color] = [ ...tempMoves ];
+		this[color] = [...tempMoves];
 		return tempMoves;
 	}
 	calculateMovesRaw(color) {
 		this[color] = [];
 		let tempMoves = [];
-		let pieces = whitePieces;
-		let opponent = blackPieces;
-		let opponentKing = blackKing;
-		let selfKing = whiteKing;
-		let opponentColor = 'black';
 
 		//start pawn
 		if (color == 'white') {
-			this.board[6].forEach((e, col) => {
-				if (e == pieces[0] && this.board[5][col] == '0' && this.board[4][col] == '0') {
+			this.board[6].forEach((piece, col) => {
+				if (piece == pieces.white.pawn && this.board[5][col] == '0' && this.board[4][col] == '0') {
 					tempMoves.push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
 				}
 			});
 		} else {
-			pieces = blackPieces;
-			opponent = whitePieces;
-			opponentKing = whiteKing;
-			selfKing = blackKing;
-			opponentColor = 'white';
-			this.board[1].forEach((e, col) => {
-				if (e == pieces[0] && this.board[2][col] == '0' && this.board[3][col] == '0') {
+			this.board[1].forEach((piece, col) => {
+				if (piece == pieces.black.pawn && this.board[2][col] == '0' && this.board[3][col] == '0') {
 					tempMoves.push(numToCol(col) + 7 + '|' + numToCol(col) + 5);
 				}
 			});
@@ -165,454 +159,156 @@ class Board {
 		this.board.forEach((arr, row) => {
 			arr.forEach((p, col) => {
 				//PAWN
-				if (color == 'white' && p == pieces[0]) {
+				let dir = color == 'white' ? 1 : -1;
+				let from = numToCol(col) + (8 - row);
+
+				if (p == pieces[color].pawn) {
+					//forward
 					try {
-						if (this.board[row - 1][col] == 0) {
+						if (this.board[row - dir][col] == 0) {
+							let to = numToCol(col) + (8 + dir - row);
+
+							//promote
 							if (row == 1) {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row) + pieces[1]);
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row) + pieces[2]);
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row) + pieces[3]);
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row) + pieces[4]);
-							} else {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + 1 - row));
+								tempMoves.push(from + '|' + to + pieces[color].rook);
+								tempMoves.push(from + '|' + to + pieces[color].knight);
+								tempMoves.push(from + '|' + to + pieces[color].bishop);
+								tempMoves.push(from + '|' + to + pieces[color].queen);
+							}
+
+							//move forward
+							else {
+								tempMoves.push(from + '|' + to);
 							}
 						}
 					} catch (e) {}
-					//capture left king
+					//capture king
 					try {
-						if (this.board[row - 1][col - 1] == opponentKing) {
-							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 + 1 - row));
+						if (this.board[row - dir][col - 1] == pieces[oppositeColor(color)].king) {
+							tempMoves.push(from + 'k' + numToCol(col - 1) + (8 + dir - row));
+						} else if (this.board[row - dir][col + 1] == pieces[oppositeColor(color)].king) {
+							tempMoves.push(from + 'k' + numToCol(col + 1) + (8 + dir - row));
 						}
 					} catch (e) {}
-					//capture right king
+					//capture left
 					try {
-						if (this.board[row - 1][col + 1] == opponentKing) {
-							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 + 1 - row));
-						}
-					} catch (e) {}
-					//capture left (1 is en passant)
-					try {
-						if (
-							opponent.some((v) => this.board[row - 1][col - 1].includes(v)) ||
-							this.board[row - 1][col - 1] == 1
-						) {
+						if (isPiece(oppositeColor(color), this.board[row - dir][col - 1]) || this.board[row - dir][col - 1] == 1) {
+							let to = numToCol(col - 1) + (8 + dir - row);
 							if (row == 1) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row) + pieces[1]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row) + pieces[2]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row) + pieces[3]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row) + pieces[4]
-								);
+								tempMoves.push(from + 'x' + to + pieces[color].rook);
+								tempMoves.push(from + 'x' + to + pieces[color].knight);
+								tempMoves.push(from + 'x' + to + pieces[color].bishop);
+								tempMoves.push(from + 'x' + to + pieces[color].queen);
 							} else {
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 + 1 - row));
+								tempMoves.push(from + 'x' + to);
 							}
 						}
 					} catch (e) {}
-					//capture right (1 is en passant)
+					//capture right
 					try {
-						if (
-							opponent.some((v) => this.board[row - 1][col + 1].includes(v)) ||
-							this.board[row - 1][col + 1] == 1
-						) {
+						if (isPiece(oppositeColor(color), this.board[row - dir][col + 1]) || this.board[row - dir][col + 1] == 1) {
+							let to = numToCol(col + 1) + (8 + dir - row);
 							if (row == 1) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row) + pieces[1]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row) + pieces[2]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row) + pieces[3]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row) + pieces[4]
-								);
+								tempMoves.push(from + 'x' + to + pieces[color].rook);
+								tempMoves.push(from + 'x' + to + pieces[color].knight);
+								tempMoves.push(from + 'x' + to + pieces[color].bishop);
+								tempMoves.push(from + 'x' + to + pieces[color].queen);
 							} else {
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 + 1 - row));
+								tempMoves.push(from + 'x' + to);
 							}
 						}
 					} catch (e) {}
 				}
-
-				if (color == 'black' && p == pieces[0]) {
-					try {
-						if (this.board[row + 1][col] == 0) {
-							if (row == 6) {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - 1 - row) + pieces[1]);
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - 1 - row) + pieces[2]);
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - 1 - row) + pieces[3]);
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - 1 - row) + pieces[4]);
-							} else {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - 1 - row));
-							}
-						}
-					} catch (e) {}
-					//capture left king
-					try {
-						if (this.board[row + 1][col - 1] == opponentKing) {
-							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - 1) + (8 - 1 - row));
-						}
-					} catch (e) {}
-					//capture right king
-					try {
-						if (this.board[row + 1][col + 1] == opponentKing) {
-							tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + 1) + (8 - 1 - row));
-						}
-					} catch (e) {}
-					//capture left (1 is en passant)
-					try {
-						if (
-							opponent.some((v) => this.board[row - 1][col - 1].includes(v)) ||
-							this.board[row + 1][col - 1] == 1
-						) {
-							if (row == 6) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 - 1 - row) + pieces[1]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 - 1 - row) + pieces[2]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 - 1 - row) + pieces[3]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 - 1 - row) + pieces[4]
-								);
-							} else {
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - 1) + (8 - 1 - row));
-							}
-						}
-					} catch (e) {}
-					//capture right (1 is en passant)
-					try {
-						if (
-							opponent.some((v) => this.board[row - 1][col + 1].includes(v)) ||
-							this.board[row + 1][col - 1] == 1
-						) {
-							if (row == 6) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 - 1 - row) + pieces[1]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 - 1 - row) + pieces[2]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 - 1 - row) + pieces[3]
-								);
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 - 1 - row) + pieces[4]
-								);
-							} else {
-								this[color].push(numToCol(col) + (8 - row) + 'x' + numToCol(col + 1) + (8 - 1 - row));
-							}
-						}
-					} catch (e) {}
-				}
-
 				//ROOK and QUEEN straight
-				if (p == pieces[1] || p == pieces[4]) {
-					let rookMoving = 1;
-					let rookBlocking = false;
-					//oppover
-					while (rookMoving < 8 && !rookBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row - rookMoving][col] == 0) {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 + rookMoving - row));
-							} else if (this.board[row - rookMoving][col] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 + rookMoving - row));
-								rookBlocking = true;
-							} else if (opponent.some((v) => this.board[row - rookMoving][col].includes(v))) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 + rookMoving - row));
-								rookBlocking = true;
-							} else {
-								//samme farge brikke
-								rookBlocking = true;
+				else if (p == pieces[color].rook || p == pieces[color].queen) {
+					outerLoop: for (let i = 0; i < 4; i++) {
+						//for hver retning
+						for (let j = 0; j < 7; j++) {
+							try {
+								let sqr = this.board[row - rookDir[i][0] * j][col + rookDir[i][1] * j];
+								let to = numToCol(col + rookDir[i][1] * j) + (8 + rookDir[i][0] * j - row);
+								//hvis fri rute
+								if (sqr == 0) {
+									tempMoves.push(from + '|' + to);
+								} else if (sqr == pieces[oppositeColor(color)].king) {
+									//hvis motsatt brikke
+									tempMoves.push(from + 'k' + to);
+									continue outerLoop;
+								} else if (pieces[oppositeColor(color)].values.splice(5, 1).some((v) => sqr.includes(v))) {
+									//hvis motsatt brikke
+									tempMoves.push(from + 'x' + to);
+									continue outerLoop;
+								} else {
+									//samme farge brikke
+									continue outerLoop;
+								}
+							} catch (e) {
+								//utenfor brett
+								continue outerLoop;
 							}
-						} catch (e) {}
-						rookMoving++;
-					}
-					//hoyre
-					rookMoving = 1;
-					rookBlocking = false;
-					while (rookMoving < 8 && !rookBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row][col + rookMoving] == 0) {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col + rookMoving) + (8 - row));
-							} else if (this.board[row][col + rookMoving] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col + rookMoving) + (8 - row));
-								rookBlocking = true;
-							} else if (opponent.some((v) => this.board[row][col + rookMoving].includes(v))) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col + rookMoving) + (8 - row));
-								rookBlocking = true;
-							} else {
-								//samme farge brikke
-								rookBlocking = true;
-							}
-						} catch (e) {}
-						rookMoving++;
-					}
-					//venstre
-					rookMoving = 1;
-					rookBlocking = false;
-					while (rookMoving < 8 && !rookBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row][col - rookMoving] == 0) {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col - rookMoving) + (8 - row));
-							} else if (this.board[row][col - rookMoving] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col - rookMoving) + (8 - row));
-								rookBlocking = true;
-							} else if (opponent.some((v) => this.board[row][col - rookMoving].includes(v))) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col - rookMoving) + (8 - row));
-								rookBlocking = true;
-							} else {
-								//samme farge brikke
-								rookBlocking = true;
-							}
-						} catch (e) {}
-						rookMoving++;
-					}
-					//nedover
-					rookMoving = 1;
-					rookBlocking = false;
-					while (rookMoving < 8 && !rookBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row + rookMoving][col] == 0) {
-								tempMoves.push(numToCol(col) + (8 - row) + '|' + numToCol(col) + (8 - rookMoving - row));
-							} else if (this.board[row + rookMoving][col] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'k' + numToCol(col) + (8 - rookMoving - row));
-								rookBlocking = true;
-							} else if (opponent.some((v) => this.board[row + rookMoving][col].includes(v))) {
-								//hvis motsatt brikke
-								tempMoves.push(numToCol(col) + (8 - row) + 'x' + numToCol(col) + (8 - rookMoving - row));
-								rookBlocking = true;
-							} else {
-								//samme farge brikke
-								rookBlocking = true;
-							}
-						} catch (e) {}
-						rookMoving++;
+						}
 					}
 				}
-
 				//KNIGHT
-				if (p == pieces[2]) {
-					const knightAround1 = [ -2, -1, 1, 2, -2, -1, 1, 2 ];
-					const knightAround2 = [ 1, 2, -2, -1, -1, -2, 2, 1 ];
+				else if (p == pieces[color].knight) {
 					for (let j = 0; j < 8; j++) {
 						try {
-							if (
-								this.board[row + knightAround1[j]][col + knightAround2[j]] == 0 ||
-								this.board[row + knightAround1[j]][col + knightAround2[j]] == 1
-							) {
-								tempMoves.push(
-									numToCol(col) +
-										(8 - row) +
-										'|' +
-										numToCol(col + knightAround2[j]) +
-										(8 - knightAround1[j] - row)
-								);
-							} else if (this.board[row + knightAround1[j]][col + knightAround2[j]] == opponentKing) {
-								tempMoves.push(
-									numToCol(col) +
-										(8 - row) +
-										'k' +
-										numToCol(col + knightAround2[j]) +
-										(8 - knightAround1[j] - row)
-								);
-							} else if (
-								opponent.some((v) => this.board[row + knightAround1[j]][col + knightAround2[j]].includes(v))
-							) {
-								tempMoves.push(
-									numToCol(col) +
-										(8 - row) +
-										'x' +
-										numToCol(col + knightAround2[j]) +
-										(8 - knightAround1[j] - row)
-								);
+							let to = numToCol(col + knightAround2[j]) + (8 - knightAround1[j] - row);
+							let sqr = this.board[row + knightAround1[j]][col + knightAround2[j]];
+							if (sqr == 0 || sqr == 1) {
+								tempMoves.push(from + '|' + to);
+							} else if (sqr == opponentKing) {
+								tempMoves.push(from + 'k' + to);
+							} else if (isPiece(oppositeColor(color), sqr)) {
+								tempMoves.push(from + 'x' + to);
 							}
-						} catch (e) {}
+						} catch (e) {
+							//utenfor brett
+						}
 					}
 				}
-				//BISHOP
-				if (p == pieces[3] || p == pieces[4]) {
-					let bishopMoving = 1;
-					let bishopBlocking = false;
-					//up right
-					while (bishopMoving < 8 && !bishopBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row - bishopMoving][col + bishopMoving] == 0) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + '|' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
-								);
-							} else if (this.board[row - bishopMoving][col + bishopMoving] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'k' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else if (
-								opponent.some((v) => this.board[row - bishopMoving][col + bishopMoving].includes(v))
-							) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + bishopMoving) + (8 + bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else {
-								//samme farge brikke
-								bishopBlocking = true;
+				//BISHOP and QUEEN diagonal
+				else if (p == pieces[color].bishop || p == pieces[color].queen) {
+					outerLoop: for (let i = 0; i < 4; i++) {
+						//up right
+						for (let j = 0; j < 7; j++) {
+							try {
+								let sqr = this.board[row - bishopDir[i][0] * j][col + bishopDir[i][1] * j];
+								let to = numToCol(col + bishopDir[i][1] * j) + (8 + bishopDir[i][0] * j - row);
+								//hvis fri rute
+								if (sqr == 0) {
+									tempMoves.push(from + '|' + to);
+								} else if (sqr == pieces[oppositeColor(color)].king) {
+									//hvis konge
+									tempMoves.push(from + 'k' + to);
+									continue outerLoop;
+								} else if (isPiece(oppositeColor(color), sqr)) {
+									//hvis motsatt brikke
+									tempMoves.push(from + 'x' + to);
+									continue outerLoop;
+								} else {
+									//samme farge brikke
+									continue outerLoop;
+								}
+							} catch (e) {
+								//utenfor brett
+								continue outerLoop;
 							}
-						} catch (e) {}
-						bishopMoving++;
-					}
-					//up left
-					bishopMoving = 1;
-					bishopBlocking = false;
-					while (bishopMoving < 8 && !bishopBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row - bishopMoving][col - bishopMoving] == 0) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + '|' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
-								);
-							} else if (this.board[row - bishopMoving][col - bishopMoving] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'k' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else if (
-								opponent.some((v) => this.board[row - bishopMoving][col - bishopMoving].includes(v))
-							) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - bishopMoving) + (8 + bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else {
-								//samme farge brikke
-								bishopBlocking = true;
-							}
-						} catch (e) {}
-						bishopMoving++;
-					}
-					//down left
-					bishopMoving = 1;
-					bishopBlocking = false;
-					while (bishopMoving < 8 && !bishopBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row + bishopMoving][col - bishopMoving] == 0) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + '|' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
-								);
-							} else if (this.board[row + bishopMoving][col - bishopMoving] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'k' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else if (
-								opponent.some((v) => this.board[row + bishopMoving][col - bishopMoving].includes(v))
-							) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col - bishopMoving) + (8 - bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else {
-								//samme farge brikke
-								bishopBlocking = true;
-							}
-						} catch (e) {}
-						bishopMoving++;
-					}
-					//down right
-					bishopMoving = 1;
-					bishopBlocking = false;
-					while (bishopMoving < 8 && !bishopBlocking) {
-						try {
-							//hvis fri rute
-							if (this.board[row + bishopMoving][col + bishopMoving] == 0) {
-								tempMoves.push(
-									numToCol(col) + (8 - row) + '|' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
-								);
-							} else if (this.board[row + bishopMoving][col + bishopMoving] == opponentKing) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'k' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else if (
-								opponent.some((v) => this.board[row + bishopMoving][col + bishopMoving].includes(v))
-							) {
-								//hvis motsatt brikke
-								tempMoves.push(
-									numToCol(col) + (8 - row) + 'x' + numToCol(col + bishopMoving) + (8 - bishopMoving - row)
-								);
-								bishopBlocking = true;
-							} else {
-								//samme farge brikke
-								bishopBlocking = true;
-							}
-						} catch (e) {}
-						bishopMoving++;
+						}
 					}
 				}
-
 				//KING
-				if (p == selfKing) {
-					const kingAround1 = [ -1, -1, -1, 0, 1, 1, 1, 0 ];
-					const kingAround2 = [ -1, 0, 1, 1, 1, 0, -1, -1 ];
+				else if (p == pieces[color].king) {
 					for (let j = 0; j < 8; j++) {
 						try {
-							if (
-								this.board[row + kingAround1[j]][col + kingAround2[j]] == 0 ||
-								this.board[row + kingAround1[j]][col + kingAround2[j]] == 1
-							) {
-								tempMoves.push(
-									numToCol(col) +
-										(8 - row) +
-										'|' +
-										numToCol(col + kingAround2[j]) +
-										(8 - kingAround1[j] - row)
-								);
-							} else if (this.board[row + kingAround1[j]][col + kingAround2[j]] == opponentKing) {
-								tempMoves.push(
-									numToCol(col) +
-										(8 - row) +
-										'k' +
-										numToCol(col + kingAround2[j]) +
-										(8 - kingAround1[j] - row)
-								);
-							} else if (
-								opponent.some((v) => this.board[row + kingAround1[j]][col + kingAround2[j]].includes(v))
-							) {
-								tempMoves.push(
-									numToCol(col) +
-										(8 - row) +
-										'x' +
-										numToCol(col + kingAround2[j]) +
-										(8 - kingAround1[j] - row)
-								);
+							let sqr = this.board[row + kingAround1[j]][col + kingAround2[j]];
+							let to = numToCol(col + kingAround2[j]) + (8 - kingAround1[j] - row);
+							if (sqr == 0 || sqr == 1) {
+								tempMoves.push(from + '|' + to);
+							} else if (sqr == pieces[oppositeColor(color).king]) {
+								tempMoves.push(from + 'k' + to);
+							} else if (isPiece(oppositeColor(color), sqr)) {
+								tempMoves.push(from + 'x' + to);
 							}
 						} catch (e) {}
 					}
@@ -622,21 +318,12 @@ class Board {
 		return tempMoves;
 	}
 	isCheck(color) {
-		if (color == 'white') {
-			this.calculateMoves('black', false);
-			this.black.forEach((e) => {
-				if (e.includes('k')) {
-					return true;
-				}
-			});
-		} else {
-			this.calculateMoves('white', false);
-			this.white.forEach((e) => {
-				if (e.includes('k')) {
-					return true;
-				}
-			});
-		}
+		this.calculateMoves(oppositeColor(color), false);
+		this[oppositeColor(color)].forEach((e) => {
+			if (e.includes('k')) {
+				return true;
+			}
+		});
 		return false;
 	}
 }
