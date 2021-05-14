@@ -351,6 +351,7 @@ class Board {
 				if (sqr == 0 || sqr == 1) {
 					moves.push(from + '|' + to);
 				} else if (sqr == pieces[oppositeColor(color).king]) {
+					console.log('a');
 					moves.push(from + 'k' + to);
 				} else if (isPiece(oppositeColor(color), sqr)) {
 					moves.push(from + 'x' + to);
