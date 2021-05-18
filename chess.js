@@ -269,7 +269,7 @@ class Board {
 				let sqr = this.board[row + knightAround1[j]][col + knightAround2[j]];
 				if (sqr == 0 || sqr == 1) {
 					moves.push(from + '|' + to);
-				} else if (sqr == opponentKing) {
+				} else if (sqr == pieces[oppositeColor(color)].king) {
 					moves.push(from + 'k' + to);
 				} else if (isPiece(oppositeColor(color), sqr)) {
 					moves.push(from + 'x' + to);
@@ -322,7 +322,7 @@ class Board {
 						//hvis motsatt brikke
 						moves.push(from + 'k' + to);
 						continue outerLoop;
-					} else if (pieces[oppositeColor(color)].values.splice(5, 1).some((v) => sqr.includes(v))) {
+					} else if (isPiece(oppositeColor(color), sqr)) {
 						//hvis motsatt brikke
 						moves.push(from + 'x' + to);
 						continue outerLoop;
@@ -350,8 +350,7 @@ class Board {
 				let to = numToCol(col + kingAround2[j]) + (8 - kingAround1[j] - row);
 				if (sqr == 0 || sqr == 1) {
 					moves.push(from + '|' + to);
-				} else if (sqr == pieces[oppositeColor(color).king]) {
-					console.log('a');
+				} else if (sqr == pieces[oppositeColor(color)].king) {
 					moves.push(from + 'k' + to);
 				} else if (isPiece(oppositeColor(color), sqr)) {
 					moves.push(from + 'x' + to);
