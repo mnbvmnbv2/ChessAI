@@ -20,7 +20,7 @@ class Board {
 		this.score = 0;
 	}
 	consoleBoard() {
-		/*let line = '';
+		let line = '';
 		this.board.forEach((row) => {
 			row.forEach((el) => {
 				line += el + '	';
@@ -28,9 +28,7 @@ class Board {
 			line += '\n';
 		});
 		console.log(line);
-		*/
-		//console.log(this.player);
-		console.log('moves', this[this.player]);
+		console.log('moves', this.player, this[this.player]);
 	}
 	printBoard() {
 		squares.forEach((sqr, i) => {
@@ -46,7 +44,7 @@ class Board {
 		this.board = nextBoard.board.map(function (arr) {
 			return [...arr];
 		});
-		console.log(this.player, 'turn: ' + g.turn + ', move: ' + move);
+		console.log(`%c${this.player}` + ' turn: ' + g.turn + ', move: ' + move,"color:lime");
 		this.turn++;
 		this.player = oppositeColor(this.player);
 		this.printBoard();
