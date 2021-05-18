@@ -17,9 +17,10 @@ class Board {
 		this.white = [];
 		this.black = [];
 		this.playedMoves = [];
+		this.score = 0;
 	}
 	consoleBoard() {
-		let line = '';
+		/*let line = '';
 		this.board.forEach((row) => {
 			row.forEach((el) => {
 				line += el + '	';
@@ -27,7 +28,8 @@ class Board {
 			line += '\n';
 		});
 		console.log(line);
-		console.log(this.player);
+		*/
+		//console.log(this.player);
 		console.log('moves', this[this.player]);
 	}
 	printBoard() {
@@ -44,7 +46,7 @@ class Board {
 		this.board = nextBoard.board.map(function (arr) {
 			return [...arr];
 		});
-		console.log('turn: ' + g.turn + ', move: ' + move);
+		console.log(this.player, 'turn: ' + g.turn + ', move: ' + move);
 		this.turn++;
 		this.player = oppositeColor(this.player);
 		this.printBoard();
@@ -137,7 +139,7 @@ class Board {
 			if (this.board[5][col] == '0' && this.board[4][col] == '0') {
 				moves.push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
 			}
-		} else if (color == 'white' && row == startPawnRow) {
+		} else if (color == 'black' && row == startPawnRow) {
 			if (this.board[2][col] == '0' && this.board[3][col] == '0') {
 				moves.push(numToCol(col) + 7 + '|' + numToCol(col) + 5);
 			}
@@ -389,7 +391,6 @@ function intelligentGame() {
 	console.time('⏰');
 	let moves = g[g.player];
 	let move = g[g.player][Math.floor(Math.random() * moves.length)];
-	console.log('heihei', move);
 
 	moves.forEach((m) => {
 		let a = g.simulateBoard(m);

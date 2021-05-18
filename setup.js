@@ -21,7 +21,7 @@ function playerSelect(e) {
 	squares.forEach((s, i) => {
 		s.style.backgroundColor = '#' + ((i + Math.floor(i / 8)) % 2 ? 'F6F9B2' : '437952');
 	});
-	$(e.target).css('background-color', '#1A659E');
+	$(e.target).css('background-color', '#3b93ff');
 }
 //FF6B35
 
