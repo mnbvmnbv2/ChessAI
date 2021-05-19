@@ -22,6 +22,9 @@ if (play) {
 	squares.forEach((s) => {
 		s.addEventListener('click', playerSelect);
 	});
+	if (playerColor == 'black') {
+		aiMove();
+	}
 
 	function playerSelect(e) {
 		if (g.player == playerColor) {
