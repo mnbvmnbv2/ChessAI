@@ -50,3 +50,14 @@ function numToCol(n) {
 function colToNum(na) {
 	return na.charCodeAt(0) - 97;
 }
+
+function targetToSqr(targetNum) {
+	let col = numToCol(targetNum % 8);
+	let num = 8 - Math.floor(targetNum / 8);
+	return col + num;
+}
+function sqrToTarget(sqr) {
+	let col = colToNum(sqr[0]);
+	let row = 64 - 8 * sqr[1];
+	return Number(col + row);
+}

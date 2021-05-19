@@ -18,6 +18,7 @@ class Board {
 		this.black = [];
 		this.playedMoves = [];
 		this.score = 0;
+		this.done = false;
 	}
 	consoleBoard() {
 		let line = '';
@@ -40,21 +41,36 @@ class Board {
 		});
 	}
 	doMove(move) {
-		const nextBoard = this.simulateBoard(move);
-		this.board = nextBoard.board.map(function (arr) {
-			return [...arr];
-		});
-		console.log(`%c${this.player}` + ' turn: ' + g.turn + ', move: ' + move,"color:lime");
-		this.turn++;
-		this.player = oppositeColor(this.player);
-		this.printBoard();
-		this.calculateMoves(this.player);
-		this.playedMoves.push(move);
-		if (move.includes('x')) {
-			this.numberOfPieces--;
+		if (!this.done) {
+			const nextBoard = this.simulateBoard(move);
+			this.board = nextBoard.board.map(function (arr) {
+				return [...arr];
+			});
+			console.log(`%c${this.player}` + ' turn: ' + g.turn + ', move: ' + move, 'color:lime');
+			this.turn++;
+			this.player = oppositeColor(this.player);
+			this.printBoard();
+			this.playedMoves.push(move);
+			if (move.includes('x')) {
+				this.numberOfPieces--;
+			}
+			this.consoleBoard();
+			this.calculateMoves(this.player);
+			if (this.numberOfPieces == 2) {
+				this.done = true;
+				alert('Patt');
+			} else if (this[this.player].length == 0) {
+				let mate = g.isCheck(this.player);
+				if (mate) {
+					this.done = true;
+					alert(oppositeColor(this.player) + ' vant!');
+				} else {
+					this.done = true;
+					alert('Patt');
+				}
+			}
+			return this[this.player];
 		}
-		this.consoleBoard();
-		return this[this.player];
 	}
 	simulateBoard(move) {
 		let from = move.slice(0, 2);
@@ -369,37 +385,4 @@ class Board {
 		return false;
 	}
 	nameOfSquare(number) {}
-}
-
-const g = new Board();
-g.consoleBoard();
-g.calculateMoves('white');
-g.printBoard();
-
-let ans = g[g.player];
-function continueGame() {
-	ans = g.doMove(ans[Math.floor(Math.random() * ans.length)]);
-	if (ans.length > 0 && g.numberOfPieces > 2) {
-		requestAnimationFrame(continueGame);
-	}
-}
-
-intelligentGame();
-function intelligentGame() {
-	console.time('⏰');
-	let moves = g[g.player];
-	let move = g[g.player][Math.floor(Math.random() * moves.length)];
-
-	moves.forEach((m) => {
-		let a = g.simulateBoard(m);
-		if (a.calculateMoves(oppositeColor(g.player)).length == 0) {
-			move = m;
-		}
-	});
-
-	g.doMove(move);
-	if (g[g.player].length > 0 && g.numberOfPieces > 2) {
-		requestAnimationFrame(intelligentGame);
-	}
-	console.timeEnd('⏰');
 }
