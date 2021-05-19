@@ -58,15 +58,14 @@ class Board {
 			this.calculateMoves(this.player);
 			if (this.numberOfPieces == 2) {
 				this.done = true;
-				alert('Patt');
+				alert('Draw');
 			} else if (this[this.player].length == 0) {
-				let mate = g.isCheck(this.player);
-				if (mate) {
+				if (g.isCheck(this.player)) {
 					this.done = true;
-					alert(oppositeColor(this.player) + ' vant!');
+					alert(oppositeColor(this.player) + ' won!');
 				} else {
 					this.done = true;
-					alert('Patt');
+					alert('Draw');
 				}
 			}
 			return this[this.player];
@@ -376,13 +375,14 @@ class Board {
 		return moves;
 	}
 	isCheck(color) {
-		this.calculateMoves(oppositeColor(color), false);
-		this[oppositeColor(color)].forEach((e) => {
-			if (e.includes('k')) {
-				return true;
+		let moves = this.calculateMovesRaw(oppositeColor(color));
+		let bool = false;
+		moves.forEach((m) => {
+			if (m.includes('k')) {
+				bool = true;
 			}
 		});
-		return false;
+		return bool;
 	}
 	nameOfSquare(number) {}
 }
