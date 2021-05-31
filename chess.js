@@ -1,43 +1,48 @@
 class Board {
 	constructor() {
 		this.board = [
-			['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
-			['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
-			[0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0],
-			['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
 			['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
+			['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+			['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
 		];
 		this.turn = 0;
 		this.numberOfPieces = 32;
 		this.player = 'white';
 		this.white = [];
 		this.black = [];
-		this.playedMoves = [];
+		this.inCheck = false;
 		this.score = 0;
 		this.done = false;
+		//kan bli global med mindre caching
+		this.playedMoves = [];
 	}
 	consoleBoard() {
-		let line = '';
-		this.board.forEach((row) => {
-			row.forEach((el) => {
-				line += el + '	';
-			});
-			line += '\n';
-		});
-		console.log(line);
+		for (let row = 0; row < 8; row++) {
+			let line = '';
+			for (let col = 0; col <= 7; col++) {
+				line += this.board[row][col];
+			}
+			console.log(line);
+		}
 		console.log('moves', this.player, this[this.player]);
 	}
 	printBoard() {
-		squares.forEach((sqr, i) => {
-			if (this.board[Math.floor(i / 8)][i % 8]) {
-				sqr.innerHTML = this.board[Math.floor(i / 8)][i % 8];
-			} else {
-				sqr.innerHTML = '';
+		let i = 0;
+		for (let row = 7; row >= 0; row--) {
+			for (let col = 0; col <= 7; col++) {
+				if (this.board[row][col]) {
+					squares[i].innerHTML = this.board[row][col];
+				} else {
+					squares[i].innerHTML = '';
+				}
+				i++;
 			}
-		});
+		}
 	}
 	doMove(move) {
 		if (!this.done) {
@@ -50,11 +55,12 @@ class Board {
 			this.player = oppositeColor(this.player);
 			this.printBoard();
 			this.playedMoves.push(move);
-			if (move.includes('x')) {
+			if (Object.values(pieces['white']).includes(move[2]) || Object.values(pieces['black']).includes(move[2])) {
 				this.numberOfPieces--;
 			}
-			this.consoleBoard();
+			this.inCheck = this.isCheck(this.player);
 			this.calculateMoves(this.player);
+			this.consoleBoard();
 			if (this.numberOfPieces == 2) {
 				this.done = true;
 				alert('Draw');
@@ -78,16 +84,26 @@ class Board {
 		nextBoard.board = this.board.map(function (arr) {
 			return [...arr];
 		});
-		nextBoard.board[8 - to[1]][colToNum(to[0])] = move.length == 6 ? piece : nextBoard.board[8 - from[1]][colToNum(from[0])];
-		nextBoard.board[8 - from[1]][colToNum(from[0])] = 0;
+
+		let sRowColTo = getSquareRowAndCol(to);
+		let sRowColFrom = getSquareRowAndCol(from);
+		nextBoard.board[sRowColTo[0]][sRowColTo[1]] = move.length == 6 ? piece : nextBoard.board[sRowColFrom[0]][sRowColFrom[1]];
+		nextBoard.board[sRowColFrom[0]][sRowColFrom[1]] = 0;
 		return nextBoard;
 	}
-	checkMove(move, color) {
+	isSelfcheck(move, color) {
 		let simBoard = this.simulateBoard(move);
 		let retO = false;
-		let a = simBoard.checkCheck(oppositeColor(color));
+		let a = null;
+		let sRowCol = getSquareRowAndCol(move.slice(0, 2));
+		////er det her?
+		if (this.board[sRowCol[0]][sRowCol[1]] == pieces[color].king || this.inCheck) {
+			a = simBoard.calculateMovesRaw(oppositeColor(color));
+		} else {
+			a = simBoard.checkCheck(oppositeColor(color));
+		}
 		a.forEach((el) => {
-			if (el.indexOf('k') > -1) {
+			if (el.indexOf(pieces[color].king) > -1) {
 				retO = true;
 			}
 		});
@@ -97,7 +113,7 @@ class Board {
 		let tempMoves = this.calculateMovesRaw(color);
 		let removeMoves = [];
 		tempMoves.forEach((move, i) => {
-			if (this.checkMove(move, color)) {
+			if (this.isSelfcheck(move, color)) {
 				removeMoves.push(move);
 			}
 		});
@@ -107,34 +123,22 @@ class Board {
 		return tempMoves;
 	}
 	calculateMovesRaw(color) {
-		//denne kjøres 1 gang for mye
 		let tempMoves = [];
-		//check every square
 		this.board.forEach((arr, row) => {
 			arr.forEach((p, col) => {
-				let from = numToCol(col) + (8 - row);
-				//PAWN
+				let from = nameOfSquare(row, col);
+
 				if (p == pieces[color].pawn) {
 					this.calculatePawn(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//ROOK
-				else if (p == pieces[color].rook) {
+				} else if (p == pieces[color].rook) {
 					this.calculateRook(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//KNIGHT
-				else if (p == pieces[color].knight) {
+				} else if (p == pieces[color].knight) {
 					this.calculateKnight(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//BISHOP
-				else if (p == pieces[color].bishop) {
+				} else if (p == pieces[color].bishop) {
 					this.calculateBishop(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//QUEEN
-				else if (p == pieces[color].queen) {
+				} else if (p == pieces[color].queen) {
 					this.calculateQueen(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//KING
-				else if (p == pieces[color].king) {
+				} else if (p == pieces[color].king) {
 					this.calculateKing(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 			});
@@ -143,71 +147,61 @@ class Board {
 	}
 	calculatePawn(from, row, col, color) {
 		let dir = color == 'white' ? 1 : -1;
-		let endPawnRow = color == 'white' ? 1 : 6;
-		let startPawnRow = color == 'white' ? 6 : 1;
+		let endPawnRow = color == 'white' ? 6 : 1;
+		let startPawnRow = color == 'white' ? 1 : 6;
 		let moves = [];
 		//start pawns
-		if (color == 'white' && row == startPawnRow) {
-			if (this.board[5][col] == '0' && this.board[4][col] == '0') {
-				moves.push(numToCol(col) + 2 + '|' + numToCol(col) + 4);
-			}
-		} else if (color == 'black' && row == startPawnRow) {
-			if (this.board[2][col] == '0' && this.board[3][col] == '0') {
-				moves.push(numToCol(col) + 7 + '|' + numToCol(col) + 5);
+		if (row == startPawnRow) {
+			if (this.board[startPawnRow + dir][col] == '0' && this.board[dir * 2 + startPawnRow][col] == '0') {
+				moves.push(nameOfSquare(startPawnRow, col) + 0 + nameOfSquare(2 * dir + startPawnRow, col));
 			}
 		}
 		//forward
 		try {
-			if (this.board[row - dir][col] == 0) {
-				let to = numToCol(col) + (8 + dir - row);
+			if (this.board[row + dir][col] == 0) {
+				let to = nameOfSquare(row + dir, col);
 
 				//promote
 				if (row == endPawnRow) {
-					moves.push(from + '|' + to + pieces[color].rook);
-					moves.push(from + '|' + to + pieces[color].knight);
-					moves.push(from + '|' + to + pieces[color].bishop);
-					moves.push(from + '|' + to + pieces[color].queen);
+					moves.push(from + 0 + to + pieces[color].rook);
+					moves.push(from + 0 + to + pieces[color].knight);
+					moves.push(from + 0 + to + pieces[color].bishop);
+					moves.push(from + 0 + to + pieces[color].queen);
 				}
 
 				//move forward
 				else {
-					moves.push(from + '|' + to);
+					moves.push(from + 0 + to);
 				}
-			}
-		} catch (e) {}
-		//capture king
-		try {
-			if (this.board[row - dir][col - 1] == pieces[oppositeColor(color)].king) {
-				moves.push(from + 'k' + numToCol(col - 1) + (8 + dir - row));
-			} else if (this.board[row - dir][col + 1] == pieces[oppositeColor(color)].king) {
-				moves.push(from + 'k' + numToCol(col + 1) + (8 + dir - row));
 			}
 		} catch (e) {}
 		//capture left
 		try {
-			if (isPiece(oppositeColor(color), this.board[row - dir][col - 1]) || this.board[row - dir][col - 1] == 1) {
-				let to = numToCol(col - 1) + (8 + dir - row);
+			let sqr = this.board[row + dir][col - 1];
+			let to = nameOfSquare(row + dir, col - 1);
+			if (isPiece(oppositeColor(color), sqr)) {
 				if (row == endPawnRow) {
-					moves.push(from + 'x' + to + pieces[color].rook);
-					moves.push(from + 'x' + to + pieces[color].knight);
-					moves.push(from + 'x' + to + pieces[color].bishop);
-					moves.push(from + 'x' + to + pieces[color].queen);
+					moves.push(from + sqr + to + pieces[color].rook);
+					moves.push(from + sqr + to + pieces[color].knight);
+					moves.push(from + sqr + to + pieces[color].bishop);
+					moves.push(from + sqr + to + pieces[color].queen);
 				} else {
-					moves.push(from + 'x' + to);
+					moves.push(from + sqr + to);
 				}
 			}
 		} catch (e) {}
 		//capture right
 		try {
-			if (isPiece(oppositeColor(color), this.board[row - dir][col + 1]) || this.board[row - dir][col + 1] == 1) {
-				let to = numToCol(col + 1) + (8 + dir - row);
+			let sqr = this.board[row + dir][col + 1];
+			let to = nameOfSquare(row + dir, col + 1);
+			if (isPiece(oppositeColor(color), sqr)) {
 				if (row == endPawnRow) {
-					moves.push(from + 'x' + to + pieces[color].rook);
-					moves.push(from + 'x' + to + pieces[color].knight);
-					moves.push(from + 'x' + to + pieces[color].bishop);
-					moves.push(from + 'x' + to + pieces[color].queen);
+					moves.push(from + sqr + to + pieces[color].rook);
+					moves.push(from + sqr + to + pieces[color].knight);
+					moves.push(from + sqr + to + pieces[color].bishop);
+					moves.push(from + sqr + to + pieces[color].queen);
 				} else {
-					moves.push(from + 'x' + to);
+					moves.push(from + sqr + to);
 				}
 			}
 		} catch (e) {}
@@ -215,22 +209,18 @@ class Board {
 	}
 	calculateRook(from, row, col, color) {
 		let moves = [];
+		//for hver retning
 		outerLoop: for (let i = 0; i < 4; i++) {
-			//for hver retning
 			for (let j = 1; j < 8; j++) {
 				try {
-					let sqr = this.board[row - rookDir[i][0] * j][col + rookDir[i][1] * j];
-					let to = numToCol(col + rookDir[i][1] * j) + (8 + rookDir[i][0] * j - row);
+					let sqr = this.board[row + rookDir[i][0] * j][col + rookDir[i][1] * j];
+					let to = nameOfSquare(row + rookDir[i][0] * j, col + rookDir[i][1] * j);
 					//hvis fri rute
 					if (sqr == 0) {
-						moves.push(from + '|' + to);
-					} else if (sqr == pieces[oppositeColor(color)].king) {
-						//hvis motsatt brikke
-						moves.push(from + 'k' + to);
-						continue outerLoop;
+						moves.push(from + 0 + to);
 					} else if (isPiece(oppositeColor(color), sqr)) {
 						//hvis motsatt brikke
-						moves.push(from + 'x' + to);
+						moves.push(from + sqr + to);
 						continue outerLoop;
 					} else {
 						//samme farge brikke
@@ -247,21 +237,16 @@ class Board {
 	calculateBishop(from, row, col, color) {
 		let moves = [];
 		outerLoop: for (let i = 0; i < 4; i++) {
-			//up right
 			for (let j = 1; j < 8; j++) {
 				try {
-					let sqr = this.board[row - bishopDir[i][0] * j][col + bishopDir[i][1] * j];
-					let to = numToCol(col + bishopDir[i][1] * j) + (8 + bishopDir[i][0] * j - row);
+					let sqr = this.board[row + bishopDir[i][0] * j][col + bishopDir[i][1] * j];
+					let to = nameOfSquare(row + bishopDir[i][0] * j, col + bishopDir[i][1] * j);
 					//hvis fri rute
 					if (sqr == 0) {
-						moves.push(from + '|' + to);
-					} else if (sqr == pieces[oppositeColor(color)].king) {
-						//hvis konge
-						moves.push(from + 'k' + to);
-						continue outerLoop;
+						moves.push(from + 0 + to);
 					} else if (isPiece(oppositeColor(color), sqr)) {
 						//hvis motsatt brikke
-						moves.push(from + 'x' + to);
+						moves.push(from + sqr + to);
 						continue outerLoop;
 					} else {
 						//samme farge brikke
@@ -279,14 +264,13 @@ class Board {
 		let moves = [];
 		for (let j = 0; j < 8; j++) {
 			try {
-				let to = numToCol(col + knightAround2[j]) + (8 - knightAround1[j] - row);
 				let sqr = this.board[row + knightAround1[j]][col + knightAround2[j]];
-				if (sqr == 0 || sqr == 1) {
-					moves.push(from + '|' + to);
-				} else if (sqr == pieces[oppositeColor(color)].king) {
-					moves.push(from + 'k' + to);
+				let to = nameOfSquare(row + knightAround1[j], col + knightAround2[j]);
+
+				if (sqr == 0) {
+					moves.push(from + 0 + to);
 				} else if (isPiece(oppositeColor(color), sqr)) {
-					moves.push(from + 'x' + to);
+					moves.push(from + sqr + to);
 				}
 			} catch (e) {
 				//utenfor brett
@@ -295,62 +279,9 @@ class Board {
 		return moves;
 	}
 	calculateQueen(from, row, col, color) {
-		let moves = [];
-		outerLoop: for (let i = 0; i < 4; i++) {
-			//up right
-			for (let j = 1; j < 8; j++) {
-				try {
-					let sqr = this.board[row - bishopDir[i][0] * j][col + bishopDir[i][1] * j];
-					let to = numToCol(col + bishopDir[i][1] * j) + (8 + bishopDir[i][0] * j - row);
-					//hvis fri rute
-					if (sqr == 0) {
-						moves.push(from + '|' + to);
-					} else if (sqr == pieces[oppositeColor(color)].king) {
-						//hvis konge
-						moves.push(from + 'k' + to);
-						continue outerLoop;
-					} else if (isPiece(oppositeColor(color), sqr)) {
-						//hvis motsatt brikke
-						moves.push(from + 'x' + to);
-						continue outerLoop;
-					} else {
-						//samme farge brikke
-						continue outerLoop;
-					}
-				} catch (e) {
-					//utenfor brett
-					continue outerLoop;
-				}
-			}
-		}
-		outerLoop: for (let i = 0; i < 4; i++) {
-			//for hver retning
-			for (let j = 1; j < 8; j++) {
-				try {
-					let sqr = this.board[row - rookDir[i][0] * j][col + rookDir[i][1] * j];
-					let to = numToCol(col + rookDir[i][1] * j) + (8 + rookDir[i][0] * j - row);
-					//hvis fri rute
-					if (sqr == 0) {
-						moves.push(from + '|' + to);
-					} else if (sqr == pieces[oppositeColor(color)].king) {
-						//hvis motsatt brikke
-						moves.push(from + 'k' + to);
-						continue outerLoop;
-					} else if (isPiece(oppositeColor(color), sqr)) {
-						//hvis motsatt brikke
-						moves.push(from + 'x' + to);
-						continue outerLoop;
-					} else {
-						//samme farge brikke
-						continue outerLoop;
-					}
-				} catch (e) {
-					//utenfor brett
-					continue outerLoop;
-				}
-			}
-		}
-		return moves;
+		let a = this.calculateBishop(from, row, col, color);
+		let b = this.calculateRook(from, row, col, color);
+		return a.concat(b);
 	}
 	calculateKing(from, row, col, color) {
 		let moves = [];
@@ -361,13 +292,11 @@ class Board {
 			} else if (col + kingAround2[j] == -1) {
 			} else {
 				let sqr = this.board[row + kingAround1[j]][col + kingAround2[j]];
-				let to = numToCol(col + kingAround2[j]) + (8 - kingAround1[j] - row);
-				if (sqr == 0 || sqr == 1) {
-					moves.push(from + '|' + to);
-				} else if (sqr == pieces[oppositeColor(color)].king) {
-					moves.push(from + 'k' + to);
+				let to = nameOfSquare(row + kingAround1[j], col + kingAround2[j]);
+				if (sqr == 0) {
+					moves.push(from + 0 + to);
 				} else if (isPiece(oppositeColor(color), sqr)) {
-					moves.push(from + 'x' + to);
+					moves.push(from + sqr + to);
 				}
 			}
 		}
@@ -377,38 +306,26 @@ class Board {
 		let moves = this.calculateMovesRaw(oppositeColor(color));
 		let bool = false;
 		moves.forEach((m) => {
-			if (m.includes('k')) {
+			if (m.includes(pieces[color].king)) {
 				bool = true;
 			}
 		});
 		return bool;
 	}
 	checkCheck(color) {
-		//denne kjøres 1 gang for mye
 		let tempMoves = [];
-		//check every square
 		this.board.forEach((arr, row) => {
 			arr.forEach((p, col) => {
-				let from = numToCol(col) + (8 - row);
-				//ROOK
+				let from = nameOfSquare(row, col);
 				if (p == pieces[color].rook) {
 					this.calculateRook(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//BISHOP
-				else if (p == pieces[color].bishop) {
+				} else if (p == pieces[color].bishop) {
 					this.calculateBishop(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//QUEEN
-				else if (p == pieces[color].queen) {
+				} else if (p == pieces[color].queen) {
 					this.calculateQueen(from, row, col, color).forEach((e) => tempMoves.push(e));
-				}
-				//KING
-				else if (p == pieces[color].king) {
-					this.calculateKing(from, row, col, color).forEach((e) => tempMoves.push(e));
 				}
 			});
 		});
 		return tempMoves;
 	}
-	nameOfSquare(number) {}
 }

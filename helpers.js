@@ -42,22 +42,21 @@ function oppositeColor(color) {
 	}
 }
 function isPiece(color, value) {
-	return Object.values(pieces[color]).splice(0, 5).includes(value);
+	return Object.values(pieces[color]).includes(value);
 }
-function numToCol(n) {
-	return String.fromCharCode(n + 97);
+function nameOfSquare(row, col) {
+	return String.fromCharCode(col + 97) + (row + 1);
 }
-function colToNum(na) {
-	return na.charCodeAt(0) - 97;
+function nameOfClickedSquare(targetNum) {
+	return String.fromCharCode((targetNum % 8) + 97) + (8 - Math.floor(targetNum / 8));
 }
-
-function targetToSqr(targetNum) {
-	let col = numToCol(targetNum % 8);
-	let num = 8 - Math.floor(targetNum / 8);
-	return col + num;
+function nameTo64(sqr) {
+	let col = sqr[0].charCodeAt(0) - 97;
+	let row = 8 - sqr[1];
+	return Number(8 * row + col);
 }
-function sqrToTarget(sqr) {
-	let col = colToNum(sqr[0]);
-	let row = 64 - 8 * sqr[1];
-	return Number(col + row);
+function getSquareRowAndCol(string) {
+	let row = Number(string[1]) - 1;
+	let col = Number(string[0].charCodeAt(0)) - 97;
+	return [row, col];
 }
