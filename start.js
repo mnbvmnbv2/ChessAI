@@ -48,7 +48,32 @@ function aiMove() {
 		});
 
 		g.doMove(move);
-	} else {
+	} else if (aiLevel == 2) {
+		let moves = g[g.player];
+		let move = moves[Math.floor(Math.random() * moves.length)];
+		let val = 0;
+		moves.forEach((m) => {
+			if (Number(m.slice(6)) > val) {
+				val = Number(m.slice(6));
+			}
+			console.log('val', val, 'a', Number(m.slice(6)));
+		});
+		b = moves.filter((m) => Number(m.slice(6)) == val);
+
+		move = b[Math.floor(Math.random() * b.length)];
+		console.log('new Moves', b);
+
+		g.doMove(move);
+	} else if (aiLevel == 3) {
+		let moves = g[g.player];
+		let move = moves[Math.floor(Math.random() * moves.length)];
+		moves.forEach((m) => {
+			if (m.includes('99')) {
+				move = m;
+			}
+		});
+
+		g.doMove(move);
 	}
 	console.timeEnd('⏰');
 }

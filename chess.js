@@ -16,6 +16,7 @@ class Board {
 		this.white = [];
 		this.black = [];
 		this.inCheck = false;
+		this.castle = false;
 		this.score = 0;
 		this.done = false;
 		//kan bli global med mindre caching
@@ -60,7 +61,9 @@ class Board {
 			}
 			this.inCheck = this.isCheck(this.player);
 			this.calculateMoves(this.player);
-			this.consoleBoard();
+			//this.consoleBoard();
+			console.log('moves', this.player, this[this.player]);
+
 			if (this.numberOfPieces == 2) {
 				this.done = true;
 				alert('Draw');
@@ -87,24 +90,35 @@ class Board {
 
 		let sRowColTo = getSquareRowAndCol(to);
 		let sRowColFrom = getSquareRowAndCol(from);
-		nextBoard.board[sRowColTo[0]][sRowColTo[1]] = move.length == 6 ? piece : nextBoard.board[sRowColFrom[0]][sRowColFrom[1]];
+		nextBoard.board[sRowColTo[0]][sRowColTo[1]] = isPiece(this.player, piece) ? piece : nextBoard.board[sRowColFrom[0]][sRowColFrom[1]];
 		nextBoard.board[sRowColFrom[0]][sRowColFrom[1]] = 0;
 		return nextBoard;
 	}
-	isSelfcheck(move, color) {
+	valueAndSelfCheck(move, color) {
+		let retO = { val: values[move[2]], check: false };
 		let simBoard = this.simulateBoard(move);
-		let retO = false;
-		let a = null;
+		let oppMoves = null;
 		let sRowCol = getSquareRowAndCol(move.slice(0, 2));
-		////er det her?
+
 		if (this.board[sRowCol[0]][sRowCol[1]] == pieces[color].king || this.inCheck) {
-			a = simBoard.calculateMovesRaw(oppositeColor(color));
+			oppMoves = simBoard.calculateMovesRaw(oppositeColor(color));
 		} else {
-			a = simBoard.checkCheck(oppositeColor(color));
+			oppMoves = simBoard.checkCheck(oppositeColor(color));
 		}
-		a.forEach((el) => {
+		if (oppMoves.length == 0 && simBoard.isCheck(oppositeColor(color))) {
+			retO.val = 99;
+		}
+		let highestNeg = 0;
+		oppMoves.forEach((m) => {
+			if (values[m[2]] > highestNeg) {
+				highestNeg = values[m[2]];
+			}
+		});
+		retO.val -= highestNeg;
+		oppMoves.forEach((el) => {
 			if (el.indexOf(pieces[color].king) > -1) {
-				retO = true;
+				retO.check = true;
+				return retO;
 			}
 		});
 		return retO;
@@ -113,8 +127,11 @@ class Board {
 		let tempMoves = this.calculateMovesRaw(color);
 		let removeMoves = [];
 		tempMoves.forEach((move, i) => {
-			if (this.isSelfcheck(move, color)) {
+			let ret = this.valueAndSelfCheck(move, color);
+			if (ret.check) {
 				removeMoves.push(move);
+			} else {
+				tempMoves[i] += '-' + ret.val;
 			}
 		});
 
