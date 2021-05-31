@@ -6,5 +6,6 @@ class Move {
 		this.change = 0;
 		this.check = false;
 		this.value = 0;
+		this.takes = false;
 	}
 }

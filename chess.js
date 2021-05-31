@@ -56,7 +56,7 @@ class Board {
 			this.player = oppositeColor(this.player);
 			this.printBoard();
 			this.playedMoves.push(move);
-			if (Object.values(pieces['white']).includes(move[2]) || Object.values(pieces['black']).includes(move[2])) {
+			if (move.takes) {
 				this.numberOfPieces--;
 			}
 			this.inCheck = this.isCheck(this.player);
@@ -80,9 +80,6 @@ class Board {
 		}
 	}
 	simulateBoard(move) {
-		let from = move.slice(0, 2);
-		let to = move.slice(3, 5);
-		let piece = move.slice(5, 6);
 		let nextBoard = new Board();
 		nextBoard.board = this.board.map(function (arr) {
 			return [...arr];
@@ -95,10 +92,10 @@ class Board {
 		return nextBoard;
 	}
 	valueAndSelfCheck(move, color) {
-		let retO = { val: values[move[2]], check: false };
+		let retO = { val: move.value, check: false };
 		let simBoard = this.simulateBoard(move);
 		let oppMoves = null;
-		let sRowCol = getSquareRowAndCol(move.slice(0, 2));
+		let sRowCol = getSquareRowAndCol(move.from);
 
 		if (this.board[sRowCol[0]][sRowCol[1]] == pieces[color].king || this.inCheck) {
 			oppMoves = simBoard.calculateMovesRaw(oppositeColor(color));
