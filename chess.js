@@ -10,7 +10,6 @@ class Board {
 			['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
 			['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
 		];
-		//kan fjernes
 		this.turn = 0;
 		this.numberOfPieces = 32;
 		this.player = 'white';
@@ -72,7 +71,6 @@ class Board {
 		}
 	}
 	simulateBoard(move) {
-		console.log('hei');
 		let from = move.slice(0, 2);
 		let to = move.slice(3, 5);
 		let piece = move.slice(5, 6);
@@ -87,7 +85,7 @@ class Board {
 	checkMove(move, color) {
 		let simBoard = this.simulateBoard(move);
 		let retO = false;
-		let a = simBoard.calculateMovesRaw(oppositeColor(color));
+		let a = simBoard.checkCheck(oppositeColor(color));
 		a.forEach((el) => {
 			if (el.indexOf('k') > -1) {
 				retO = true;
@@ -384,6 +382,33 @@ class Board {
 			}
 		});
 		return bool;
+	}
+	checkCheck(color) {
+		//denne kjøres 1 gang for mye
+		let tempMoves = [];
+		//check every square
+		this.board.forEach((arr, row) => {
+			arr.forEach((p, col) => {
+				let from = numToCol(col) + (8 - row);
+				//ROOK
+				if (p == pieces[color].rook) {
+					this.calculateRook(from, row, col, color).forEach((e) => tempMoves.push(e));
+				}
+				//BISHOP
+				else if (p == pieces[color].bishop) {
+					this.calculateBishop(from, row, col, color).forEach((e) => tempMoves.push(e));
+				}
+				//QUEEN
+				else if (p == pieces[color].queen) {
+					this.calculateQueen(from, row, col, color).forEach((e) => tempMoves.push(e));
+				}
+				//KING
+				else if (p == pieces[color].king) {
+					this.calculateKing(from, row, col, color).forEach((e) => tempMoves.push(e));
+				}
+			});
+		});
+		return tempMoves;
 	}
 	nameOfSquare(number) {}
 }
