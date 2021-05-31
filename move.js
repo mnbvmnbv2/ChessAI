@@ -1,11 +1,11 @@
 class Move {
-	constructor(from, to) {
-		this.from = from;
+	constructor(piece, from, to, takes) {
+		this.piece = piece;
 		this.to = to;
-		this.takes = 0;
-		this.change = 0;
+		this.from = from;
+		this.takes = takes;
+		this.changeTo = 0;
 		this.check = false;
-		this.value = 0;
-		this.takes = false;
+		this.value = values[takes];
 	}
 }

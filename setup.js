@@ -16,7 +16,7 @@ function playerSelect(e) {
 	if (g.player == playerColor) {
 		if (targets.includes($(e.target).index())) {
 			g[playerColor].forEach((m) => {
-				if (m.includes(from) && m.includes(nameOfClickedSquare($(e.target).index()))) {
+				if (m.from == from && m.to == nameOfClickedSquare($(e.target).index())) {
 					g.doMove(m);
 					aiMove();
 				}
@@ -31,9 +31,9 @@ function playerSelect(e) {
 		});
 		$(e.target).css('background-color', '#3b93ff');
 		g[playerColor].forEach((move) => {
-			if (move.substring(0, 2) == from) {
-				$(squares[nameTo64(move.substring(3, 5))]).css('background-color', '#ffc73b');
-				targets.push(nameTo64(move.substring(3, 5)));
+			if (move.from == from) {
+				$(squares[nameTo64(move.to)]).css('background-color', '#ffc73b');
+				targets.push(nameTo64(move.to));
 			}
 		});
 	}

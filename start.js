@@ -50,25 +50,29 @@ function aiMove() {
 		g.doMove(move);
 	} else if (aiLevel == 2) {
 		let moves = g[g.player];
-		let move = moves[Math.floor(Math.random() * moves.length)];
-		let val = 0;
+		let val = -100;
 		moves.forEach((m) => {
-			if (Number(m.slice(6)) > val) {
-				val = Number(m.slice(6));
+			if (m.value > val) {
+				val = m.value;
 			}
-			console.log('val', val, 'a', Number(m.slice(6)));
 		});
-		b = moves.filter((m) => Number(m.slice(6)) == val);
+		let b = moves.filter((m) => m.value >= val);
 
-		move = b[Math.floor(Math.random() * b.length)];
-		console.log('new Moves', b);
+		if (b.length == 0) {
+			move = moves[Math.floor(Math.random() * moves.length)];
+		} else {
+			move = b[Math.floor(Math.random() * b.length)];
+		}
+		let moveVals = [];
+		b.forEach((m) => moveVals.push(m.value));
+		console.log('new Moves vals', moveVals);
 
 		g.doMove(move);
 	} else if (aiLevel == 3) {
 		let moves = g[g.player];
 		let move = moves[Math.floor(Math.random() * moves.length)];
 		moves.forEach((m) => {
-			if (m.includes('99')) {
+			if (m.value > 50) {
 				move = m;
 			}
 		});
