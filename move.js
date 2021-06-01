@@ -12,7 +12,7 @@ class Move {
 	static calculateMoveValue(move, depth) {
 		if (depth == 0) {
 			return move.value;
-		} else {
+		} else if (depth % 2) {
 			let highestVal = -100;
 			let arr = [];
 			move.moves.forEach((m) => {
@@ -24,7 +24,7 @@ class Move {
 			});
 			move.value -= highestVal;
 			return highestVal;
-		} /* else if (depth % 2) {
+		} else {
 			let lowestVal = 100;
 			let arr = [];
 			move.moves.forEach((m) => {
@@ -36,6 +36,6 @@ class Move {
 			});
 			move.value += lowestVal;
 			return lowestVal;
-		}*/
+		}
 	}
 }

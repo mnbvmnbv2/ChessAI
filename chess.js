@@ -167,17 +167,17 @@ class Board {
 				//promote
 				if (row == endPawnRow) {
 					let a = new Move(p, from, to, 0);
-					let b = new Move(p, from, to, 0);
+					a.changeTo = pieces[color].rook;
+					moves.push(a);
+					/*let b = new Move(p, from, to, 0);
 					let c = new Move(p, from, to, 0);
 					let d = new Move(p, from, to, 0);
-					a.changeTo = pieces[color].rook;
 					b.changeTo = pieces[color].knight;
 					c.changeTo = pieces[color].bishop;
 					d.changeTo = pieces[color].queen;
-					moves.push(a);
 					moves.push(b);
 					moves.push(c);
-					moves.push(d);
+					moves.push(d);*/
 				}
 
 				//move forward
@@ -193,17 +193,17 @@ class Board {
 			if (isPiece(oppositeColor(color), sqr)) {
 				if (row == endPawnRow) {
 					let a = new Move(p, from, to, sqr);
-					let b = new Move(p, from, to, sqr);
+					a.changeTo = pieces[color].rook;
+					moves.push(a);
+					/*let b = new Move(p, from, to, sqr);
 					let c = new Move(p, from, to, sqr);
 					let d = new Move(p, from, to, sqr);
-					a.changeTo = pieces[color].rook;
 					b.changeTo = pieces[color].knight;
 					c.changeTo = pieces[color].bishop;
 					d.changeTo = pieces[color].queen;
-					moves.push(a);
 					moves.push(b);
 					moves.push(c);
-					moves.push(d);
+					moves.push(d);*/
 				} else {
 					moves.push(new Move(p, from, to, sqr));
 				}
@@ -216,17 +216,17 @@ class Board {
 			if (isPiece(oppositeColor(color), sqr)) {
 				if (row == endPawnRow) {
 					let a = new Move(p, from, to, sqr);
-					let b = new Move(p, from, to, sqr);
+					a.changeTo = pieces[color].rook;
+					moves.push(a);
+					/*let b = new Move(p, from, to, sqr);
 					let c = new Move(p, from, to, sqr);
 					let d = new Move(p, from, to, sqr);
-					a.changeTo = pieces[color].rook;
 					b.changeTo = pieces[color].knight;
 					c.changeTo = pieces[color].bishop;
 					d.changeTo = pieces[color].queen;
-					moves.push(a);
 					moves.push(b);
 					moves.push(c);
-					moves.push(d);
+					moves.push(d);*/
 				} else {
 					moves.push(new Move(p, from, to, sqr));
 				}

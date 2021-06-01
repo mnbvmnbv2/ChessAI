@@ -49,29 +49,30 @@ function aiMove() {
 		g.doMove(move);
 	} else if (aiLevel == 2) {
 		let moves = g[g.player];
-		let val = -100;
+		let move = moves[Math.floor(Math.random() * moves.length)];
+		let va = -100;
+		let dep = 1;
+
 		moves.forEach((m) => {
-			if (m.value > val) {
-				val = m.value;
+			g.addAllMoveChildren(m, dep, g.player);
+			Move.calculateMoveValue(m, dep);
+			if (m.value > va) {
+				va = m.value;
 			}
 		});
-		let b = moves.filter((m) => m.value >= val);
-
+		let b = moves.filter((m) => m.value >= va);
 		if (b.length == 0) {
 			move = moves[Math.floor(Math.random() * moves.length)];
 		} else {
 			move = b[Math.floor(Math.random() * b.length)];
 		}
-		let moveVals = [];
-		b.forEach((m) => moveVals.push(m.value));
-		console.log('new Moves vals', moveVals);
 
 		g.doMove(move);
 	} else if (aiLevel == 3) {
 		let moves = g[g.player];
 		let move = moves[Math.floor(Math.random() * moves.length)];
 		let va = -100;
-		let dep = 1;
+		let dep = 3;
 
 		moves.forEach((m) => {
 			g.addAllMoveChildren(m, dep, g.player);
