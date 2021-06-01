@@ -72,7 +72,7 @@ function aiMove() {
 		let moves = g[g.player];
 		let move = moves[Math.floor(Math.random() * moves.length)];
 		let va = -100;
-		let dep = 3;
+		let dep = 2;
 
 		moves.forEach((m) => {
 			g.addAllMoveChildren(m, dep, g.player);
@@ -93,7 +93,7 @@ function aiMove() {
 		let moves = g[g.player];
 		let move = moves[Math.floor(Math.random() * moves.length)];
 		let va = -100;
-		let dep = 1;
+		let dep = 3;
 
 		moves.forEach((m) => {
 			g.addAllMoveChildren(m, dep, g.player);

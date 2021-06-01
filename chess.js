@@ -1,3 +1,5 @@
+let fastKings = 0;
+let fullKings = 0;
 class Board {
 	constructor() {
 		this.board = [
@@ -65,6 +67,8 @@ class Board {
 			this.calculateMoves(this.player);
 			//this.consoleBoard();
 			console.log('moves', this.player, this[this.player]);
+			console.log('fastKings:', fastKings);
+			console.log('fullkings:', fullKings);
 
 			if (this.numberOfPieces == 2) {
 				this.done = true;
@@ -98,18 +102,12 @@ class Board {
 	isSelfCheck(move, color) {
 		let retO = false;
 		let simBoard = this.simulateBoard(move);
-		let oppMoves = null;
-		if (move.piece == pieces[color].king || this.inCheck) {
-			oppMoves = simBoard.calculateMovesRaw(oppositeColor(color));
-		} else {
-			oppMoves = simBoard.checkCheck(oppositeColor(color));
-		}
 
-		oppMoves.forEach((m) => {
-			if (m.takes == pieces[color].king) {
-				retO = true;
-			}
-		});
+		if (move.piece == pieces[color].king || this.inCheck) {
+			retO = simBoard.checkCheckFull(color);
+		} else {
+			retO = simBoard.checkCheckFast(color);
+		}
 		return retO;
 	}
 	calculateMoves(color) {
@@ -167,14 +165,14 @@ class Board {
 				//promote
 				if (row == endPawnRow) {
 					let a = new Move(p, from, to, 0);
-					a.changeTo = pieces[color].rook;
+					a.changeTo = pieces[color].queen;
 					moves.push(a);
 					/*let b = new Move(p, from, to, 0);
 					let c = new Move(p, from, to, 0);
 					let d = new Move(p, from, to, 0);
 					b.changeTo = pieces[color].knight;
 					c.changeTo = pieces[color].bishop;
-					d.changeTo = pieces[color].queen;
+					d.changeTo = pieces[color].rook;
 					moves.push(b);
 					moves.push(c);
 					moves.push(d);*/
@@ -193,14 +191,14 @@ class Board {
 			if (isPiece(oppositeColor(color), sqr)) {
 				if (row == endPawnRow) {
 					let a = new Move(p, from, to, sqr);
-					a.changeTo = pieces[color].rook;
+					a.changeTo = pieces[color].queen;
 					moves.push(a);
 					/*let b = new Move(p, from, to, sqr);
 					let c = new Move(p, from, to, sqr);
 					let d = new Move(p, from, to, sqr);
 					b.changeTo = pieces[color].knight;
 					c.changeTo = pieces[color].bishop;
-					d.changeTo = pieces[color].queen;
+					d.changeTo = pieces[color].rook;
 					moves.push(b);
 					moves.push(c);
 					moves.push(d);*/
@@ -216,14 +214,14 @@ class Board {
 			if (isPiece(oppositeColor(color), sqr)) {
 				if (row == endPawnRow) {
 					let a = new Move(p, from, to, sqr);
-					a.changeTo = pieces[color].rook;
+					a.changeTo = pieces[color].queen;
 					moves.push(a);
 					/*let b = new Move(p, from, to, sqr);
 					let c = new Move(p, from, to, sqr);
 					let d = new Move(p, from, to, sqr);
 					b.changeTo = pieces[color].knight;
 					c.changeTo = pieces[color].bishop;
-					d.changeTo = pieces[color].queen;
+					d.changeTo = pieces[color].rook;
 					moves.push(b);
 					moves.push(c);
 					moves.push(d);*/
@@ -325,6 +323,81 @@ class Board {
 		}
 		return moves;
 	}
+	calculateFastKing(p, from, row, col, color) {
+		fastKings++;
+		//bish
+		outerLoop: for (let i = 0; i < 4; i++) {
+			for (let j = 1; j < 8; j++) {
+				try {
+					let sqr = this.board[row + bishopDir[i][0] * j][col + bishopDir[i][1] * j];
+					if (sqr == pieces[oppositeColor(color)].bishop || sqr == pieces[oppositeColor(color)].queen) {
+						return true;
+					} else if (sqr != 0) {
+						continue outerLoop;
+					}
+				} catch (e) {
+					continue outerLoop;
+				}
+			}
+		}
+		//rook
+		outerLoop2: for (let i = 0; i < 4; i++) {
+			for (let j = 1; j < 8; j++) {
+				try {
+					let sqr = this.board[row + rookDir[i][0] * j][col + rookDir[i][1] * j];
+					if (sqr == pieces[oppositeColor(color)].rook || sqr == pieces[oppositeColor(color)].queen) {
+						return true;
+					} else if (sqr != 0) {
+						continue outerLoop2;
+					}
+				} catch (e) {
+					continue outerLoop2;
+				}
+			}
+		}
+		return false;
+	}
+	calculateFullKing(p, from, row, col, color) {
+		fullKings++;
+		//resten
+		if (this.calculateFastKing(p, from, row, col, color)) {
+			return true;
+		}
+		//knight
+		for (let j = 0; j < 8; j++) {
+			try {
+				let sqr = this.board[row + knightAround1[j]][col + knightAround2[j]];
+				if (sqr == pieces[oppositeColor(color)].knight) {
+					return true;
+				}
+			} catch (e) {}
+		}
+		//pawnleft
+		let dir = color == 'white' ? 1 : -1;
+		try {
+			let sqr = this.board[row + dir][col - 1];
+			if (sqr == pieces[oppositeColor(color)].pawn) {
+				return true;
+			}
+		} catch (e) {}
+		//capture right
+		try {
+			let sqr = this.board[row + dir][col + 1];
+			if (sqr == pieces[oppositeColor(color)].pawn) {
+				return true;
+			}
+		} catch (e) {}
+		//kingKing
+		for (let j = 0; j < 8; j++) {
+			try {
+				let sqr = this.board[row + kingAround1[j]][col + kingAround2[j]];
+				if (sqr == pieces[oppositeColor(color)].king) {
+					return true;
+				}
+			} catch (e) {}
+		}
+		return false;
+	}
 	isCheck(color) {
 		let moves = this.calculateMovesRaw(oppositeColor(color));
 		let bool = false;
@@ -343,28 +416,38 @@ class Board {
 			return false;
 		}
 	}
-	checkCheck(color) {
-		let tempMoves = [];
+	checkCheckFast(color) {
+		let retO = false;
 		this.board.forEach((arr, row) => {
 			arr.forEach((p, col) => {
 				let from = nameOfSquare(row, col);
-				if (p == pieces[color].rook) {
-					this.calculateRook(p, from, row, col, color).forEach((e) => tempMoves.push(e));
-				} else if (p == pieces[color].bishop) {
-					this.calculateBishop(p, from, row, col, color).forEach((e) => tempMoves.push(e));
-				} else if (p == pieces[color].queen) {
-					this.calculateQueen(p, from, row, col, color).forEach((e) => tempMoves.push(e));
+				if (p == pieces[color].king) {
+					retO = this.calculateFastKing(p, from, row, col, color);
 				}
 			});
 		});
-		return tempMoves;
+		return retO;
+	}
+	checkCheckFull(color) {
+		let retO = false;
+		this.board.forEach((arr, row) => {
+			arr.forEach((p, col) => {
+				let from = nameOfSquare(row, col);
+				if (p == pieces[color].king) {
+					retO = this.calculateFullKing(p, from, row, col, color);
+				}
+			});
+		});
+		return retO;
 	}
 	v(move, depth, color) {
 		console.time('🍿');
 		this.addAllMoveChildren(move, depth, color);
+		console.timeEnd('🍿');
+		console.time('🍕');
 		Move.calculateMoveValue(move, depth);
 		console.log(move.value);
-		console.timeEnd('🍿');
+		console.timeEnd('🍕');
 	}
 	addAllMoveChildren(move, depth, color) {
 		if (depth == 0) {
