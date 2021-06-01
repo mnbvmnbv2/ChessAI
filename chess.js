@@ -3,10 +3,10 @@ class Board {
 		this.board = [
 			['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
 			['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
-			[0, '♙', 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0],
-			[0, '♞', 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0],
 			['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
 			['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
 		];
@@ -30,7 +30,6 @@ class Board {
 			}
 			console.log(line);
 		}
-		console.log('moves', this.player, this[this.player]);
 	}
 	printBoard() {
 		let i = 0;
@@ -63,7 +62,7 @@ class Board {
 				this.numberOfPieces--;
 			}
 			this.inCheck = this.isCheck(this.player);
-			this[this.player] = [...this.calculateMoves(this.player)];
+			this.calculateMoves(this.player);
 			//this.consoleBoard();
 			console.log('moves', this.player, this[this.player]);
 
@@ -96,25 +95,19 @@ class Board {
 		nextBoard.board[sRowColFrom[0]][sRowColFrom[1]] = 0;
 		return nextBoard;
 	}
-	valueAndSelfCheck(move, color) {
-		let retO = { val: move.value, check: false };
+	isSelfCheck(move, color) {
+		let retO = false;
 		let simBoard = this.simulateBoard(move);
 		let oppMoves = null;
-		oppMoves = simBoard.calculateMovesRaw(oppositeColor(color));
-		let highestNegativeValue = 0;
+		if (move.piece == pieces[color].king || this.inCheck) {
+			oppMoves = simBoard.calculateMovesRaw(oppositeColor(color));
+		} else {
+			oppMoves = simBoard.checkCheck(oppositeColor(color));
+		}
 
 		oppMoves.forEach((m) => {
-			if (values[m.takes] > highestNegativeValue) {
-				highestNegativeValue = values[m.takes];
-			}
-		});
-		//???????
-		retO.val += Number(highestNegativeValue);
-		console.log(highestNegativeValue);
-		oppMoves.forEach((m) => {
 			if (m.takes == pieces[color].king) {
-				retO.check = true;
-				return retO;
+				retO = true;
 			}
 		});
 		return retO;
@@ -123,16 +116,13 @@ class Board {
 		let tempMoves = this.calculateMovesRaw(color);
 		let removeMoves = [];
 		tempMoves.forEach((move, i) => {
-			let ret = this.valueAndSelfCheck(move, color);
-			if (ret.check) {
+			if (this.isSelfCheck(move, color)) {
 				removeMoves.push(move);
-			} else {
-				tempMoves[i].value -= ret.val;
 			}
 		});
 
 		tempMoves = tempMoves.filter((m) => !removeMoves.includes(m));
-		this[color] = [...tempMoves];
+		this[color] = tempMoves;
 		return tempMoves;
 	}
 	calculateMovesRaw(color) {
@@ -345,6 +335,14 @@ class Board {
 		});
 		return bool;
 	}
+	isMate(color) {
+		this.calculateMoves(color);
+		if (this.isCheck && this.color.length == 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 	checkCheck(color) {
 		let tempMoves = [];
 		this.board.forEach((arr, row) => {
@@ -360,5 +358,26 @@ class Board {
 			});
 		});
 		return tempMoves;
+	}
+	v(move, depth, color) {
+		console.time('🍿');
+		this.addAllMoveChildren(move, depth, color);
+		Move.calculateMoveValue(move, depth);
+		console.log(move.value);
+		console.timeEnd('🍿');
+	}
+	addAllMoveChildren(move, depth, color) {
+		if (depth == 0) {
+			return;
+		} else {
+			this.addMoveChildren(move, color);
+			move.moves.forEach((m) => {
+				this.addAllMoveChildren(m, depth - 1, oppositeColor(color));
+			});
+		}
+	}
+	addMoveChildren(move, color) {
+		let nextState = this.simulateBoard(move);
+		move.moves = nextState.calculateMoves(oppositeColor(color));
 	}
 }

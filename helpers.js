@@ -75,3 +75,7 @@ function getSquareRowAndCol(string) {
 	let col = Number(string[0].charCodeAt(0)) - 97;
 	return [row, col];
 }
+
+Array.min = function (array) {
+	return Math.min.apply(Math, array);
+};
